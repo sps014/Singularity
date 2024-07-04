@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" mode="ios">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Singularity</title>
+    <base href="/" />
+
+    <link rel="stylesheet" href="./@ionic/core/css/ionic.bundle.css" />
+    <script type="module" src="./@ionic/core/dist/ionic/ionic.js"></script>
+    <script nomodule src="./@ionic/core/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="./@ionic/core/css/palettes/dark.always.css" />
+
+
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="Singularity.styles.css" />
+
+
+    <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons/dist/ionicons/ionicons.js"></script>
+
+    <link rel="icon" type="image/png" href="favicon.png" />
+</head>
+
+<body>
+
+    <div class="status-bar-safe-area"></div>
+
+    <div id="app">
+        <div class="loading">
+            <svg width="29" height="24" viewBox="0 0 29 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path class="path" d="M14.3564 0L28.2128 24H0.5L14.3564 0Z" />
+                <defs>
+                    <linearGradient id="paint0_linear_742_347" x1="3.35641" y1="18" x2="25.8564" y2="18" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#E5B1EE" />
+                        <stop offset="0.517791" stop-color="#D9D9D9" />
+                        <stop offset="0.9999" stop-color="#57859C" />
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+        <style>
+            * {
+                padding: 0px;
+                margin: 0px;
+                box-sizing: border-box;
+            }
+
+            :root {
+                --stroke-dasharray: 15;
+            }
+
+            html {
+                height: 100%;
+            }
+
+            body {
+                height: 100%;
+                position: relative;
+                background: linear-gradient(90deg, rgba(229, 177, 238, 0.08) 0%, rgba(37, 182, 255, 0.10) 100%), #121212;
+            }
+
+            .path {
+                stroke-dasharray: var(--stroke-dasharray);
+                stroke: #ffffff;
+                animation: dash 5s linear infinite;
+                animation-delay: -1s;
+            }
+
+            @keyframes dash {
+                to {
+                    stroke-dashoffset: 200;
+                }
+            }
+
+            .loading {
+                display: grid;
+                place-items: center;
+                background: #121212;
+                height: 100vh;
+                width: 100vw;
+                position: fixed;
+                z-index: 10;
+                transform-origin: center;
+            }
+
+            h1 {
+                margin: 0 auto;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-family: "sans-serif";
+                color: #fff;
+                letter-spacing: 2px;
+                text-shadow: 2px 4px 6px rgba(0,0,0,0.25)
+            }
+        </style>
+    </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+
+</body>
+
+</html>
