@@ -1,18 +1,15 @@
 ﻿@using Singularity.Models
 @inject NavigationManager NavManager
 
-@* <MusicView/>
- *@
+<MusicView/>
+
  <nav style="z-index:1000">
     <ul>
         @foreach(var tab in Tabs)
         {
             <li class="@GetActiveClass(tab)">
                 <a href="@tab.Link" style="display:flex; justify-content:center">
-                    <img src="@tab.ImagePath" height="24" width="24" style="margin-top:8px"/>
-                    @* 
-                        <p>@tab.Name</p>
-                    *@
+                    <img src="@tab.ImagePath" height="24" width="24" style="margin-top:10px"/>
                 </a>
          </li>
         }
@@ -55,9 +52,7 @@
 
     nav
     {
-        background: linear-gradient(to right, #1F1C18, #1F1F00); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-
-        border: 1px solid rgba(235, 122, 52,0.5);
+        background: linear-gradient(to top, #1F1C18, rgba(0,0,0,0)); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         position: absolute;
         bottom: 0;
         left: 0;
@@ -85,9 +80,7 @@
                 padding: 8px;
                 text-align: center;
                 border-left: 1px solid rgba(66, 203, 245,0.1);
-                border-top-left-radius:20px;
-                border-top-right-radius: 20px;
-            }
+          }
 
                 nav ul li p {
                     font-size: 12px;
