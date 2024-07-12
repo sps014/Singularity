@@ -25,7 +25,7 @@
         <ApplicationTitle>Singularity</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.sps014.singularity</ApplicationId>
+        <ApplicationId>com.companyname.singularity</ApplicationId>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -58,14 +58,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="wwwroot\%40ionic\core\dist\node_modules\ionicons\dist\collection\components\icon\icon.css" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+        <PackageReference Include="YoutubeExplode" Version="6.3.16" />
     </ItemGroup>
 
 </Project>
