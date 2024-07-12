@@ -22,53 +22,6 @@
 </div>
 
 
-@code
-{
-
-
-
-    [Parameter]
-    public string? Title { get; set; }
-
-    [Parameter]
-    public RenderFragment? ChildContent { get; set; }
-
-    [Parameter]
-    public string Padding { get; set; } = "10px";
-
-
-    private bool IsSearchPage => Nav.Uri.EndsWith("search");
-
-    private bool isMusicViewInitialized = false;
-    private string lastSearch = string.Empty;
-
-    [Parameter]
-    public EventCallback<(string SearchTerm, bool Finalized)> OnSearch { get; set; }
-
-
-    public void UpdateLastSearch(string newsearch)
-    {
-        lastSearch = newsearch;
-        StateHasChanged();
-    }
-
-    private void GoToSearch()
-    {
-        if (!IsSearchPage)
-            Nav.NavigateTo("/search");
-    }
-
-    private void OnSearchChanged(ChangeEventArgs e)
-    {
-        lastSearch = e.Value!.ToString()!;
-        OnSearch.InvokeAsync((lastSearch, false)!);
-    }
-    private void OnSearchFinished(KeyboardEventArgs e)
-    {
-        if (e.Code == "Enter")
-            OnSearch.InvokeAsync((lastSearch, true)!);
-    }
-}
 
 
 <style>
@@ -80,7 +33,7 @@
     }
 
     #glassTopHeader {
-        background-color: rgba(255, 245, 209,0.1);
+        background: linear-gradient(to right, #1F1C18, #1F1F20); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         border: 1px solid rgba(235, 122, 52,0.5);
         backdrop-filter: blur(50px);
         margin-top: -10px;

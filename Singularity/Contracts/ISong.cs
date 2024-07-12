@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Singularity.Contracts;
 
-public interface ISong
+public interface ISong:IEquatable<ISong>
 {
     string Id { get; set; }
     string Name { get; set; }
@@ -16,5 +16,5 @@ public interface ISong
     TimeSpan? Duration { get; set; }
     IMusicHub MusicHub { get; init; }
 
-    ValueTask<StreamUrl?> GetAudioUrl();
+    ValueTask<StreamUrl?> GetAudioUrlAsync();
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,8 +25,13 @@ public class YouTubeSong : ISong
         MusicHub = musicHub;
     }
 
-    public ValueTask<StreamUrl?> GetAudioUrl()
+    public ValueTask<StreamUrl?> GetAudioUrlAsync()
     {
-        return MusicHub.GetSongStreamUrl(Id);
+        return MusicHub.GetSongStreamUrlAsync(Id);
+    }
+
+    public bool Equals(ISong? other)
+    {
+        return other!=null && Id.Equals(other.Id);
     }
 }

@@ -16,6 +16,7 @@ public class YoutubeMusicHub : IMusicHub
 {
     private static YoutubeClient? youtubeClient = null;
 
+    private Dictionary<string,string> cachedMediaUrls = new Dictionary<string,string>();
     public static YoutubeClient YoutubeClient
     {
         get
@@ -31,7 +32,7 @@ public class YoutubeMusicHub : IMusicHub
         Logger = logger;
     }
 
-    public async ValueTask<ISong?> GetSongMetaData(string id)
+    public async ValueTask<ISong?> GetSongMetaDataAsync(string id)
     {
         ISong? song =null;
 
@@ -40,6 +41,8 @@ public class YoutubeMusicHub : IMusicHub
             try
             {
                 var songInfo = await YoutubeClient.Videos.GetAsync(id);
+
+                Logger.LogInformation($"fetched metadata for song   -> {songInfo.Id} -> {songInfo.Title}");
 
                 song = new YouTubeSong(this)
                 {
@@ -62,9 +65,15 @@ public class YoutubeMusicHub : IMusicHub
         
     }
 
-    public async ValueTask<StreamUrl?> GetSongStreamUrl(string id)
+    public async ValueTask<StreamUrl?> GetSongStreamUrlAsync(string id)
     {
         StreamUrl? songUrl = null;
+
+        if (cachedMediaUrls.TryGetValue(id, out songUrl))
+        {
+            Logger.LogInformation($"read audio stream url from cache   -> {id}");
+            return songUrl;
+        }
 
         await Task.Run(async () =>
         {
@@ -72,7 +81,9 @@ public class YoutubeMusicHub : IMusicHub
             {
                 var songInfo = await YoutubeClient.Videos.Streams.GetManifestAsync(id);
                 songUrl = songInfo.GetAudioOnlyStreams().GetWithHighestBitrate().Url;
-                
+                cachedMediaUrls[id] = songUrl;
+                Logger.LogInformation($"read audio stream url from network   -> {id}");
+
             }
             catch (Exception ex)
             {

@@ -8,7 +8,7 @@ namespace Singularity.Contracts;
 
 public interface IMusicHub
 {
-    ValueTask<ISong?> GetSongMetaData(string id);
-    ValueTask<string?> GetSongStreamUrl(string id);
+    ValueTask<ISong?> GetSongMetaDataAsync(string id);
+    ValueTask<string?> GetSongStreamUrlAsync(string id);
 
 }
