@@ -3,25 +3,24 @@
 {
     <div class="music">
         <div class="controls">
-            <img class="img" src="@AudioManager.CurrentSong.ThumbnailUrl" />
-            <div style="display:flex;flex-direction:column;align-items:flex-start;margin-left:10px;color:white">
-                <p class="ellepsis"><b>@AudioManager.CurrentSong.Name</b></p>
+            <img class="img" id="img_musicView_small" src="@AudioManager.CurrentSong.ThumbnailUrl" />
+            <div style="display:flex;flex-direction:column;margin-left:10px;color:white;align-items:flex-start">
+                <p class="ellepsis" style="font-weight:bold">@AudioManager.CurrentSong.Name</p>
                 <p class="ellepsis">@AudioManager.CurrentSong.Singer</p>
                 <div></div>
             </div>
             @if (true)
             {
-                <img src="./images/pause.svg" height="32" width="32" @onclick:stopPropagation="true" />
+                <img src="./images/pause.svg" style="margin-right:10px" height="32" width="32" @onclick:stopPropagation="true" />
             }
-            @* else
-        {
-        <img src="./images/play.svg" height="32" width="32" @onclick="PlayPauseToggle" @onclick:stopPropagation="true" />
-        } *@
+        </div>
+        <div style="width:100%;display:flex;justify-content:;left;margin-top:4px">
+            <div style="width:@(AudioManager.MediaPositionPercent.ToString("0.00"))%;height:3px;background-image: linear-gradient(43deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+    ">
+            </div>
         </div>
     </div>
-
-@*             <MudProgressLinear Color="Color.Secondary" Value="@CurrentTime" Max="@Duration" Size="Size.Small" Style="margin-top:-10px;margin-left:80px;margin-right:80px;width:calc(100vw - 160px)" />
- *@ }
+  }
 
 
 
@@ -34,16 +33,16 @@
     }
 
     .music {
-        background: linear-gradient(to right, #1F1C18, #1F1F00); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+        background: hsla(180, 63%, 8%, 1);
+        background: linear-gradient(90deg, hsla(180, 63%, 8%, 1) 0%, hsla(183, 69%, 10%, 1) 100%);
+        background: -moz-linear-gradient(90deg, hsla(180, 63%, 8%, 1) 0%, hsla(183, 69%, 10%, 1) 100%);
+        background: -webkit-linear-gradient(90deg, hsla(180, 63%, 8%, 1) 0%, hsla(183, 69%, 10%, 1) 100%);
+        filter: progid: DXImageTransform.Microsoft.gradient( startColorstr="#082323", endColorstr="#082A2C", GradientType=1 );
         height: 60px;
         width: 100%;
         position: absolute;
         bottom: 60px;
-        border-top-left-radius: 20px;
-        border-top-right-radius: 20px;
-        border: 1px solid rgba(66, 245, 209,0.5);
         padding: 4px;
-        backdrop-filter: blur(10px);
         display: flex;
         flex-direction: column;
         justify-content: space-around;
@@ -97,7 +96,7 @@
 
     .img {
         border-radius: 50%;
-        border: 2px solid rgba(66, 245, 209,0.5);
+        border: 2px solid black;
         display: flex;
         align-items: center;
         width: 50px;

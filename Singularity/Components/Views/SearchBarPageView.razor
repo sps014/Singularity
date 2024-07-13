@@ -6,8 +6,10 @@
 
         @if (!IsSearchPage)
         {
-            <img src="./images/icon.svg" width="40" height="40" />
-            <div class="title">@Title</div>
+            <div style="display:flex;align-items:center">
+                <img src="./images/icon.svg" width="40" height="40" />
+                <div class="title">@Title.ToUpper()</div>
+            </div>
             <img src="./images/search.svg" width="28" height="28" @onclick="GoToSearch" />
         }
         else
@@ -29,16 +31,15 @@
     .title {
         color: white;
         font-size: 22px;
+        font-weight:bold;
         margin-left: 0px;
     }
 
     #glassTopHeader {
-        background: linear-gradient(to right, #1F1C18, #1F1F20); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-        border: 1px solid rgba(235, 122, 52,0.5);
+        background: black; /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         backdrop-filter: blur(50px);
         margin-top: -10px;
         width: 100%;
-        transform: translateZ(0);
     }
 
     .scrollbar-hidden::-webkit-scrollbar {

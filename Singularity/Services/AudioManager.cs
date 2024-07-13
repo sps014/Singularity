@@ -29,6 +29,16 @@ public class AudioManager
 
     public ILogger<AudioManager> Logger { get; }
 
+    public float MediaPositionPercent
+    {
+        get
+        {
+            if(CurrentSong == null)
+                return 0;
+            return (float)(MediaPlayer.Position.TotalMilliseconds * 100.0f / MediaPlayer.Duration.TotalMilliseconds);
+        }
+    }
+
 
     public AudioManager(ILogger<AudioManager> logger)
     {

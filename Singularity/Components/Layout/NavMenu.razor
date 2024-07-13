@@ -21,10 +21,10 @@
 {
     private readonly List<TabPage> Tabs = new List<TabPage>
     {
-        new TabPage("./images/home.svg","/"),
-        new TabPage("./images/heart.svg","/like"),
-        new TabPage("./images/music.svg","/recent"),
-        new TabPage("./images/playlist.svg","/playlist"),
+        new TabPage("./images/home.svg","/","Home"),
+        new TabPage("./images/search.svg","/search","Search"),
+        new TabPage("./images/heart.svg","/recent","Favourite"),
+        new TabPage("./images/playlist.svg","/playlist","Playlist"),
     };
 
     protected override void OnInitialized()
@@ -52,15 +52,11 @@
 
     nav
     {
-        background: linear-gradient(to top, #1F1C18, rgba(0,0,0,0)); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+        background: black; /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         position: absolute;
         bottom: 0;
         left: 0;
-        margin-top: -10px;
         width: 100%;
-        border-top-left-radius:20px;
-        border-top-right-radius: 20px;
-        transform: translateZ(0);
     }
 
         nav ul
@@ -79,7 +75,6 @@
                 flex: 1;
                 padding: 8px;
                 text-align: center;
-                border-left: 1px solid rgba(66, 203, 245,0.1);
           }
 
                 nav ul li p {

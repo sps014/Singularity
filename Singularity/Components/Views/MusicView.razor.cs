@@ -3,31 +3,54 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BlazorBindGen;
 using CommunityToolkit.Maui.Core.Primitives;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using Singularity.Services;
 
 namespace Singularity.Components.Views;
 
-public  partial class MusicView
+public  partial class MusicView :IDisposable
 {
 #nullable disable
     [Inject]
     public AudioManager AudioManager { get; set; }
+    [Inject]
+    public IJSRuntime Runtime { get; set; }
 
 #nullable restore
     protected override void OnInitialized()
     {
         base.OnInitialized();
         AudioManager.MediaPlayer.StateChanged += MediaPlayerStateChanged;
+        AudioManager.MediaPlayer.PositionChanged += MediaPlayerPositionChanged;
     }
 
-    private async void MediaPlayerStateChanged(object? sender, MediaStateChangedEventArgs e)
+    private async void MediaPlayerPositionChanged(object? sender, MediaPositionChangedEventArgs e)
     {
         await InvokeAsync(() =>
         {
             StateHasChanged();
 
         });
+    }
+
+    private async void MediaPlayerStateChanged(object? sender, MediaStateChangedEventArgs e)
+    {
+        await InvokeAsync(async() =>
+        {
+            
+            StateHasChanged();
+            await Task.Delay(200);
+        });
+    }
+
+
+
+    public void Dispose()
+    {
+        AudioManager.MediaPlayer.StateChanged -= MediaPlayerStateChanged;
+        AudioManager.MediaPlayer.PositionChanged -= MediaPlayerPositionChanged;
     }
 }
