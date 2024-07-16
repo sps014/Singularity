@@ -11,59 +11,31 @@ using Singularity.Services;
 
 namespace Singularity.Components.Views;
 
-public  partial class MusicView :IDisposable
+public  partial class MusicView
 {
-#nullable disable
-    [Inject]
-    public AudioManager AudioManager { get; set; }
-    [Inject]
-    public IJSRuntime Runtime { get; set; }
-
-#nullable restore
+    public static MusicView? Instance { get; private set; }
+    
+    private bool isExpanded = false;
+    public bool IsExpanded
+    {
+        get
+        {
+            return isExpanded;
+        }
+        set
+        {
+            isExpanded = value;
+            StateHasChanged();
+        }
+    }
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        AudioManager.MediaPlayer.StateChanged += MediaPlayerStateChanged;
-        AudioManager.MediaPlayer.PositionChanged += MediaPlayerPositionChanged;
+        Instance = this;
     }
-
-    private async void MediaPlayerPositionChanged(object? sender, MediaPositionChangedEventArgs e)
+    private void ToggleMusicView()
     {
-        await InvokeAsync(() =>
-        {
-            StateHasChanged();
-
-        });
-    }
-
-    private async void MediaPlayerStateChanged(object? sender, MediaStateChangedEventArgs e)
-    {
-        await InvokeAsync(async() =>
-        {
-            
-            StateHasChanged();
-            await Task.Delay(200);
-        });
-    }
-
-    private async Task HandlePlayPause()
-    {
-        if(AudioManager.MediaPlayer.CurrentState==MediaElementState.Playing)
-        {
-            AudioManager.Pause();
-            StateHasChanged();
-        }
-        else
-        {
-            await AudioManager.PlayAsync();
-            StateHasChanged();
-        }
-    }
-
-
-    public void Dispose()
-    {
-        AudioManager.MediaPlayer.StateChanged -= MediaPlayerStateChanged;
-        AudioManager.MediaPlayer.PositionChanged -= MediaPlayerPositionChanged;
+        IsExpanded = !IsExpanded;
+        StateHasChanged();
     }
 }

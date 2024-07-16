@@ -1,0 +1,77 @@
+﻿@using CommunityToolkit.Maui.Core.Primitives;
+@if (AudioManager.CurrentSong != null)
+{
+    <div class="music">
+        <div class="controls" @onclick="()=>OnToggled.InvokeAsync()">
+            <img class="img" id="img_musicView_small" src="@AudioManager.CurrentSong.ThumbnailUrl" />
+            <div style="display:flex;flex-direction:column;margin-left:10px;color:white;align-items:flex-start">
+                <p class="ellepsis" style="font-weight:bold">@AudioManager.CurrentSong.Name</p>
+                <p class="ellepsis">@AudioManager.CurrentSong.Singer</p>
+                <div></div>
+            </div>
+            @if (AudioManager.MediaPlayer.CurrentState == MediaElementState.Playing)
+            {
+                <img src="./images/pause.svg" style="margin-right:10px" @onclick="HandlePlayPause"
+                     height="32" width="32" @onclick:stopPropagation="true" />
+            }
+            else
+            {
+                <img src="./images/play.svg" style="margin-right:10px" @onclick="HandlePlayPause"
+                     height="32" width="32" @onclick:stopPropagation="true" />
+            }
+        </div>
+        <div style="width:100%;display:flex;justify-content:;left;margin-top:4px">
+            <div style="width:@(AudioManager.MediaPositionPercent.ToString("0.00"))%;height:3px;background:#ff1493;">
+            </div>
+        </div>
+    </div>
+}
+
+
+
+<style>
+    .ellepsis {
+        width: 64vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .music {
+        background: rgba(7,17,27,0.5);
+        backdrop-filter: blur(10px);
+        height: 60px;
+        width: 100%;
+        position: absolute;
+        bottom: 60px;
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        transition: height 0.5s,bottom 0.5s;
+    }
+
+    .controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .img {
+        border-radius: 50%;
+        border: 2px solid black;
+        display: flex;
+        align-items: center;
+        width: 50px;
+        height: 50px;
+        margin-top: -2px;
+        margin-left: 10px;
+    }
+
+    .music-control {
+        margin-top: 10px;
+        display: flex;
+        width: 60%;
+        justify-content: space-between;
+    }
+</style>
