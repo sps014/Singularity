@@ -46,6 +46,19 @@ public  partial class MusicView :IDisposable
         });
     }
 
+    private async Task HandlePlayPause()
+    {
+        if(AudioManager.MediaPlayer.CurrentState==MediaElementState.Playing)
+        {
+            AudioManager.Pause();
+            StateHasChanged();
+        }
+        else
+        {
+            await AudioManager.PlayAsync();
+            StateHasChanged();
+        }
+    }
 
 
     public void Dispose()

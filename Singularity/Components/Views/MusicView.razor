@@ -1,4 +1,4 @@
-﻿
+﻿@using CommunityToolkit.Maui.Core.Primitives;
 @if (AudioManager.CurrentSong!=null)
 {
     <div class="music">
@@ -9,14 +9,19 @@
                 <p class="ellepsis">@AudioManager.CurrentSong.Singer</p>
                 <div></div>
             </div>
-            @if (true)
+            @if (AudioManager.MediaPlayer.CurrentState==MediaElementState.Playing)
             {
-                <img src="./images/pause.svg" style="margin-right:10px" height="32" width="32" @onclick:stopPropagation="true" />
+                <img src="./images/pause.svg" style="margin-right:10px" @onclick="HandlePlayPause"
+                    height="32" width="32" @onclick:stopPropagation="true" />
+            }
+            else
+            {
+                <img src="./images/play.svg" style="margin-right:10px" @onclick="HandlePlayPause"
+                height="32" width="32" @onclick:stopPropagation="true" />
             }
         </div>
         <div style="width:100%;display:flex;justify-content:;left;margin-top:4px">
-            <div style="width:@(AudioManager.MediaPositionPercent.ToString("0.00"))%;height:3px;background-image: linear-gradient(43deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
-    ">
+            <div style="width:@(AudioManager.MediaPositionPercent.ToString("0.00"))%;height:3px;background:#ff1493;">
             </div>
         </div>
     </div>
@@ -33,11 +38,8 @@
     }
 
     .music {
-        background: hsla(180, 63%, 8%, 1);
-        background: linear-gradient(90deg, hsla(180, 63%, 8%, 1) 0%, hsla(183, 69%, 10%, 1) 100%);
-        background: -moz-linear-gradient(90deg, hsla(180, 63%, 8%, 1) 0%, hsla(183, 69%, 10%, 1) 100%);
-        background: -webkit-linear-gradient(90deg, hsla(180, 63%, 8%, 1) 0%, hsla(183, 69%, 10%, 1) 100%);
-        filter: progid: DXImageTransform.Microsoft.gradient( startColorstr="#082323", endColorstr="#082A2C", GradientType=1 );
+        background: rgba(7,17,27,0.5);
+        backdrop-filter:blur(10px);
         height: 60px;
         width: 100%;
         position: absolute;
@@ -49,48 +51,9 @@
         transition: height 0.5s,bottom 0.5s;
     }
 
-    .toggle-music {
-        height: 100vh;
-        width: 100%;
-        position: absolute;
-        bottom: 0px;
-        border-top-left-radius: 20px;
-        border-top-right-radius: 20px;
-        border: 1px solid rgba(66, 245, 209,0.5);
-        padding: 20px;
-        transition: height 0.5s, bottom 0.5s;
-    }
-
-    .video-ctrl {
-        margin-top: 6px;
-        width: 80vw;
-        height: 60vh;
-        object-fit: cover;
-    }
-
-    .cover-image {
-        height: 50vh;
-        width: 50vh;
-    }
-
     .controls {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-    }
-
-    .toggle-controls {
-        height: 85vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
-
-    .music-control {
-        margin-top: 10px;
-        display: flex;
-        width: 60%;
         justify-content: space-between;
     }
 
@@ -105,43 +68,10 @@
         margin-left: 10px;
     }
 
-    .menubar-items {
-        margin-left: 30px;
-        margin-right: 30px;
-        height: 70%;
-        margin-top: 90px;
-        padding-top: 180px;
-        padding-left: 12px;
-        padding-right: 12px;
-        background-color: rgba(66, 245, 209, 0.1);
-    }
-
-    .menubar-cover {
+    .music-control {
+        margin-top: 10px;
         display: flex;
-        justify-content: center;
-        position: absolute;
-        width: 100%;
-        top: 25px;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .menubar-cover-image {
-        height: 20vh;
-        width: 20vh;
-        box-shadow: 10px 10px 5px 0px rgba(0, 0, 0, 0.75);
-    }
-
-    .menubar-option {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-
-    .ellepsis-menubar {
-        width: 40vw;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        width: 60%;
+        justify-content: space-between;
     }
 </style>

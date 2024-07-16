@@ -115,7 +115,10 @@ public class AudioManager
         if(url==null)
             return;
 
-        MediaPlayer.Source = MediaSource.FromUri(url);
+        if (MediaPlayer.Source==null || (MediaPlayer.Source is UriMediaSource source && source.Uri.ToString()!=url))
+        {
+            MediaPlayer.Source = MediaSource.FromUri(url);
+        }
         MediaPlayer.Play();
 
         Logger.LogInformation($"started playing {CurrentSong.Id} -> {CurrentSong.Name}");
@@ -147,6 +150,13 @@ public class AudioManager
             default:
                 break;
         }
+    }
+
+    public void Pause()
+    {
+        if (CurrentSong is null) return;
+        Logger.LogInformation($"Paused {CurrentSong.Id}");
+        MediaPlayer.Pause();
     }
 }
 
