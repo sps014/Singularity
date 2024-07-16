@@ -10,6 +10,7 @@ namespace Singularity
     {
         public static string ToMusicString(this TimeSpan timeSpan)
         {
+
             if (timeSpan.TotalHours < 1)
             {
                 return timeSpan.ToString(@"mm\:ss");

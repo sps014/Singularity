@@ -36,6 +36,5 @@ public  partial class MusicView
     private void ToggleMusicView()
     {
         IsExpanded = !IsExpanded;
-        StateHasChanged();
     }
 }

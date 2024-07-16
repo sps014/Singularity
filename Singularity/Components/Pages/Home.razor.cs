@@ -24,7 +24,7 @@ public partial class Home
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        var song = await MusicHub!.GetSongMetaDataAsync("AMuRRXCuy-4");
+        var song = await MusicHub!.GetSongMetaDataAsync("_NIFoqfSO6E");
 
         if (song == null)
             return;
