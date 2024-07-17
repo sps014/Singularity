@@ -14,7 +14,8 @@
         }
         else
         {
-            <input @bind-value="lastSearch" id="search" type="search" @oninput="OnSearchChanged" @onkeyup="OnSearchFinished" placeholder="search anything here" />
+            <input @bind-value="lastSearch" id="search" type="search"
+                @oninput="OnSearchChanged" @onkeyup="OnSearchFinished" placeholder="search anything here" />
         }
     </div>
 
@@ -36,7 +37,7 @@
     }
 
     #glassTopHeader {
-        background: #07111b; /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+        background: rgba(7,17,27,0.5); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         backdrop-filter: blur(50px);
         margin-top: -10px;
         width: 100%;

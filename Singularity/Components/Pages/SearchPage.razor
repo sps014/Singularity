@@ -1,0 +1,46 @@
+﻿@page "/search"
+
+<SearchBarPageView OnSearch="OnSearch" @ref="tabView">
+    @if (!IsInSearchTypeMode)
+    {
+        @if (IsSearchComplete)
+        {
+            @foreach (var audio in SearchedSongList)
+            {
+                <MusicTrack Song="audio"/>
+            }
+
+        }
+        else
+        {
+            for (int i = 0; i < 15; i++)
+            {
+                <MusicTrack/>
+            }
+        }
+
+    }
+    else
+    {
+        @foreach (var option in SearchSuggestions)
+        {
+            <Glass Class="searchOption" Clicked="()=>OnLinkClicked(option)">
+                <div style="display:flex;margin-left:20px;margin-top:10px;margin-right:10px;align-items:center;justify-content:space-between">
+                    <img src="./images/search.svg" width="24" height="24" />
+                    <p>@option</p>
+                    <img src="./images/link.svg" width="20" height="20"/>
+                </div>
+            </Glass>
+        }
+
+    }
+</SearchBarPageView>
+
+<style>
+    .searchOption {
+        height: 3rem;
+        color: white;
+        border-radius: 25px;
+        margin: 12px;
+    }
+</style>

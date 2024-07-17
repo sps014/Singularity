@@ -8,6 +8,7 @@ using Singularity.Contracts;
 using Singularity.Models;
 using YoutubeExplode;
 using YoutubeExplode.Common;
+using YoutubeExplode.Videos;
 using YoutubeExplode.Videos.Streams;
 
 namespace Singularity.Services;
@@ -15,8 +16,10 @@ namespace Singularity.Services;
 public class YoutubeMusicHub : IMusicHub
 {
     private static YoutubeClient? youtubeClient = null;
+    private const string SearchUrl = "https://clients1.google.com/complete/search?client=youtube&gs_ri=youtube&ds=yt&q=";
+    private static HttpClient Http = new HttpClient();
+    private Dictionary<string, string> cachedMediaUrls = new Dictionary<string, string>();
 
-    private Dictionary<string,string> cachedMediaUrls = new Dictionary<string,string>();
     public static YoutubeClient YoutubeClient
     {
         get
@@ -34,9 +37,9 @@ public class YoutubeMusicHub : IMusicHub
 
     public async ValueTask<ISong?> GetSongMetaDataAsync(string id)
     {
-        ISong? song =null;
+        ISong? song = null;
 
-        await Task.Run(async() =>
+        await Task.Run(async () =>
         {
             try
             {
@@ -62,7 +65,7 @@ public class YoutubeMusicHub : IMusicHub
         });
 
         return song;
-        
+
     }
 
     public async ValueTask<StreamUrl?> GetSongStreamUrlAsync(string id)
@@ -93,5 +96,48 @@ public class YoutubeMusicHub : IMusicHub
         });
 
         return songUrl;
+    }
+
+    public async ValueTask<ICollection<string>> SuggestionsAsync(string query, CancellationTokenSource searchCancellation)
+    {
+        var original = query;
+        query = Uri.EscapeDataString(query);
+        query = SearchUrl + query;
+        var res = await Http.GetAsync(query, searchCancellation.Token);
+        var js = await res.Content.ReadAsStringAsync(searchCancellation.Token);
+
+        var parts = js.Split('[').Where(t => t.Split('"').Length > 2).Select(t => t.Split('"')[1]);
+
+        return parts.Distinct().ToList();
+    }
+    public async ValueTask<ICollection<ISong>> SearchAsync(string query, CancellationTokenSource searchCancellation, int maxCount = 10)
+    {
+        var list = new List<ISong>();
+        try
+        {
+            int i = 0;
+            await foreach (var video in YoutubeClient.Search.GetVideosAsync(query, searchCancellation.Token))
+            {
+                if (i > maxCount)
+                    break;
+
+                i++;
+                var song = new YouTubeSong(this)
+                {
+                    Description = string.Empty,
+                    Duration = video.Duration,
+                    Id = video.Id,
+                    Name = video.Title,
+                    Singer = video.Author.ChannelTitle,
+                    ThumbnailUrl = video.Thumbnails.GetWithHighestResolution().Url
+                };
+                list.Add(song);
+            }
+            return list;
+        }
+        catch
+        {
+            return new List<ISong>();
+        }
     }
 }

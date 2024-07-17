@@ -1,0 +1,44 @@
+﻿<div class="icon">
+    <span></span>
+    <span></span>
+    <span></span>
+</div>
+@code {
+
+}
+
+<style>
+    .icon {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        width: 13px;
+        height: 13px;
+    }
+
+    .icon span {
+        width: 3px;
+        height: 100%;
+        background-color: orange;
+        border-radius: 3px;
+        animation: bounce 2.2s ease infinite alternate;
+        content: '';
+        transform-origin: bottom; 
+    }
+
+    @@keyframes bounce {
+        
+      10% { transform: scaleY(0.3); }
+      30% { transform: scaleY(1); } 
+      60% { transform: scaleY(0.5); } 
+      80% { transform: scaleY(0.75); } 
+      100% { transform: scaleY(0.6); } 
+    
+    }
+    .icon span {
+      animation: bounce 2.2s ease infinite alternate;
+    }
+    .icon span:nth-child(1) { animation-delay: 0.1s; }
+    .icon span:nth-child(2) { animation-delay: 0.2s; }
+    .icon span:nth-child(3) { animation-delay: 0.3s; }
+</style>

@@ -96,6 +96,33 @@ public class AudioManager:BindableObject
         await PlayAsync(seekToStart:true);
 
     }
+
+    public async ValueTask PlayNowAsync(ISong song)
+    {
+        Pause();
+        var existingItem = queuedSongs.FirstOrDefault(x=>x.Id==song.Id);
+        var first = queuedSongs.FirstOrDefault()!;
+
+        if(first != null)
+        {
+            queuedSongs.Remove(first);
+            queuedSongs.Add(first);
+        }
+
+        if(existingItem == null)
+        {
+            queuedSongs.Insert(0, song);
+            await PlayAsync(true);
+            return;
+        }
+
+        //move current song to end
+        queuedSongs.Remove(existingItem);
+        queuedSongs.Insert(0,existingItem);
+
+        await PlayAsync(seekToStart: true);
+
+    }
     public async ValueTask PlayAsync(bool seekToStart =false)
     {
         if (CurrentSong is null)
