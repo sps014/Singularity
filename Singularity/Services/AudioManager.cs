@@ -12,7 +12,7 @@ using Singularity.Contracts;
 namespace Singularity.Services;
 
 
-public class AudioManager
+public class AudioManager:BindableObject
 {
     private static MediaElement? MediaElement;
     private List<ISong> queuedSongs { get; } = new List<ISong>();
@@ -71,8 +71,7 @@ public class AudioManager
         //if played more than 5 sec than play same from start
         if (time.TotalSeconds > 5)
         {
-            await MediaPlayer.SeekTo(TimeSpan.Zero);
-            await PlayAsync();
+            await PlayAsync(true);
             return;
         }
 
@@ -81,8 +80,7 @@ public class AudioManager
         queuedSongs.Remove(last);
         await AddSongAsync(last);
 
-        await MediaPlayer.SeekTo(TimeSpan.Zero);
-        await PlayAsync();
+        await PlayAsync(true);
     }
 
     public async ValueTask PlayNextSongAsync()
@@ -95,11 +93,10 @@ public class AudioManager
         queuedSongs.Remove(CurrentSong!);
         queuedSongs.Add(first);
 
-        await MediaPlayer.SeekTo(TimeSpan.Zero);
-        await PlayAsync();
+        await PlayAsync(seekToStart:true);
 
     }
-    public async ValueTask PlayAsync()
+    public async ValueTask PlayAsync(bool seekToStart =false)
     {
         if (CurrentSong is null)
             return;
@@ -119,7 +116,11 @@ public class AudioManager
         {
             MediaPlayer.Source = MediaSource.FromUri(url);
         }
+        
         MediaPlayer.Play();
+
+        if (seekToStart)
+            await MediaPlayer.SeekTo(TimeSpan.Zero);
 
         Logger.LogInformation($"started playing {CurrentSong.Id} -> {CurrentSong.Name}");
     }
@@ -136,20 +137,24 @@ public class AudioManager
 
     private async void MediaPlayerMediaEnded(object? sender, EventArgs e)
     {
-        Logger.LogInformation($"Media has ended {CurrentSong?.Id} -> {CurrentSong?.Name}");
-
-        switch(LoopMode)
+        await this.Dispatcher.DispatchAsync(async() =>
         {
-            case LoopMode.Same:
-                await MediaPlayer.SeekTo(TimeSpan.Zero);
-                await PlayAsync();
-                break;
-            case LoopMode.All:
-                await PlayNextSongAsync();
-                break;
-            default:
-                break;
-        }
+            Logger.LogInformation($"Media has ended {CurrentSong?.Id} -> {CurrentSong?.Name}");
+
+            switch (LoopMode)
+            {
+                case LoopMode.Same:
+                    await MediaPlayer.SeekTo(TimeSpan.Zero);
+                    await PlayAsync();
+                    break;
+                case LoopMode.All:
+                    await PlayNextSongAsync();
+                    break;
+                default:
+                    break;
+            }
+        });
+        
     }
 
     public void Pause()

@@ -73,6 +73,11 @@ public partial class MusicExpandedView: IDisposable
         }
     }
 
+    private void OnInputRangeSlider(ChangeEventArgs e)
+    {
+        AudioManager.MediaPlayer.SeekTo(TimeSpan.FromSeconds(double.Parse(e.Value.ToString()!)));
+    }
+
     public void Dispose()
     {
         AudioManager.MediaPlayer.StateChanged -= MediaPlayerStateChanged;
