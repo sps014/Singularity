@@ -45,6 +45,16 @@ public class AudioManager:BindableObject
         Logger = logger;
     }
 
+    private void SetMetaData()
+    {
+        if(CurrentSong == null)
+            return;
+
+        MediaPlayer.MetadataTitle = CurrentSong.Name;
+        MediaPlayer.MetadataArtist = CurrentSong.Singer;
+        MediaPlayer.MetadataArtworkUrl = CurrentSong.ThumbnailUrl;
+    }
+
     public async ValueTask AddSongAsync(ISong song)
     {
         var sameSong = QueuedSongs.FirstOrDefault(x => x.Id == song.Id);
@@ -143,6 +153,8 @@ public class AudioManager:BindableObject
         {
             MediaPlayer.Source = MediaSource.FromUri(url);
         }
+
+        SetMetaData();
         
         MediaPlayer.Play();
 
