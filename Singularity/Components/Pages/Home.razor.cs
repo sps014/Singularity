@@ -13,24 +13,5 @@ namespace Singularity.Components.Pages;
 public partial class Home
 {
 
-#nullable disable
-    [Inject]
-    public AudioManager AudioManager { get; set; }
-    [Inject]
-    public IMusicHub MusicHub { get; set; }
 
-#nullable restore
-
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-        var song = await MusicHub!.GetSongMetaDataAsync("_NIFoqfSO6E");
-
-        if (song == null)
-            return;
-
-        await AudioManager.AddSongAsync(song);
-        await AudioManager.PlayAsync();
-
-    }
 }

@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components;
+using Singularity.Services;
 
 namespace Singularity.Components.Views;
 
-public partial class SearchBarPageView
+public partial class SearchBarPageView:IDisposable
 {
 
     [Parameter]
@@ -20,6 +21,10 @@ public partial class SearchBarPageView
     [Parameter]
     public string Padding { get; set; } = "10px";
 
+#nullable disable
+    [Inject]
+    public AudioManager AudioManager { get; set; }
+#nullable restore
 
     private bool IsSearchPage => Nav.Uri.EndsWith("search");
 
@@ -29,6 +34,20 @@ public partial class SearchBarPageView
     [Parameter]
     public EventCallback<(string SearchTerm, bool Finalized)> OnSearch { get; set; }
 
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        AudioManager.MediaPlayer.StateChanged += MediaPlayer_StateChanged;
+    }
+
+    private async void MediaPlayer_StateChanged(object? sender, CommunityToolkit.Maui.Core.Primitives.MediaStateChangedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            isMusicViewInitialized = true;
+            StateHasChanged();
+        });
+    }
 
     public void UpdateLastSearch(string newsearch)
     {
@@ -51,5 +70,10 @@ public partial class SearchBarPageView
     {
         if (e.Code == "Enter")
             OnSearch.InvokeAsync((lastSearch, true)!);
+    }
+
+    public void Dispose()
+    {
+        AudioManager.MediaPlayer.StateChanged -= MediaPlayer_StateChanged;
     }
 }

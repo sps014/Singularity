@@ -57,7 +57,7 @@ public partial class SearchPage
         await SearchSemaphore.WaitAsync();
         IsSearchComplete = false;
 
-        SearchedSongList = await MusicHub.SearchAsync(e.Query,searchCancellation);
+        SearchedSongList = await MusicHub.SearchAsync(e.Query,searchCancellation,15);
 
         SearchSemaphore.Release();
         IsSearchComplete = true;
