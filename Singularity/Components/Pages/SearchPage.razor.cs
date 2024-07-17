@@ -20,7 +20,7 @@ public partial class SearchPage
     [Inject]
     public IMusicHub MusicHub { get; set; }
 
-    private SearchBarPageView tabView;
+    private TabBarContentView tabView;
 #nullable restore
 
     private CancellationTokenSource searchCancellation = new CancellationTokenSource();

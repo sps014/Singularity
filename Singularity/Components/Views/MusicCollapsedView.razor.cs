@@ -24,6 +24,8 @@ public partial class MusicCollapsedView : IDisposable
     [Parameter]
     public EventCallback OnToggled { get; set; }
 
+    private DateTime _lastUpdateTime = DateTime.MinValue;
+
     protected override void OnInitialized()
     {
         base.OnInitialized();
@@ -33,6 +35,11 @@ public partial class MusicCollapsedView : IDisposable
 
     private async void MediaPlayerPositionChanged(object? sender, MediaPositionChangedEventArgs e)
     {
+        if ((DateTime.Now - _lastUpdateTime).TotalMilliseconds < 1000)
+        {
+            return;
+        }
+        _lastUpdateTime = DateTime.Now;
         await InvokeAsync(() =>
         {
             StateHasChanged();

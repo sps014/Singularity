@@ -1,6 +1,6 @@
 ﻿@page "/search"
 
-<SearchBarPageView OnSearch="OnSearch" @ref="tabView">
+<TabBarContentView OnSearch="OnSearch" @ref="tabView">
     @if (!IsInSearchTypeMode)
     {
         @if (IsSearchComplete)
@@ -34,7 +34,7 @@
         }
 
     }
-</SearchBarPageView>
+</TabBarContentView>
 
 <style>
     .searchOption {

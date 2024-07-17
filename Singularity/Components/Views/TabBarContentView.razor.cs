@@ -9,7 +9,7 @@ using Singularity.Services;
 
 namespace Singularity.Components.Views;
 
-public partial class SearchBarPageView:IDisposable
+public partial class TabBarContentView : IDisposable
 {
 
     [Parameter]

@@ -19,6 +19,7 @@ public partial class MusicExpandedView: IDisposable
 
     [Parameter]
     public EventCallback OnToggled { get; set; }
+    private DateTime _lastUpdateTime = DateTime.MinValue;
 
     protected override void OnInitialized()
     {
@@ -26,9 +27,14 @@ public partial class MusicExpandedView: IDisposable
         AudioManager.MediaPlayer.StateChanged += MediaPlayerStateChanged;
         AudioManager.MediaPlayer.PositionChanged += MediaPlayerPositionChanged;
     }
-
     private async void MediaPlayerPositionChanged(object? sender, MediaPositionChangedEventArgs e)
     {
+        if((DateTime.Now-_lastUpdateTime).TotalMilliseconds<1000)
+        {
+            return;
+        }
+        _lastUpdateTime = DateTime.Now;
+
         await InvokeAsync(() =>
         {
             StateHasChanged();
