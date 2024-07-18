@@ -1,6 +1,6 @@
 ﻿@using CommunityToolkit.Maui.Core.Primitives
 @using Singularity
-@if(AudioManager.CurrentSong!=null)
+@if (AudioManager.CurrentSong != null)
 {
     <NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
     <div class="toggle-music">
@@ -10,12 +10,15 @@
                 <img src="./images/menu-bar.svg" width="28" height="28" style="position:absolute;top:8px;right:23px;" />
             </div>
             <img class="cover-image" src="@AudioManager.CurrentSong.ThumbnailUrl" />
-            <div style="display:flex;flex-direction:column;align-items:center;color:white;margin:40px 20px;">
-                <div>
-                    <p class="ellepsis"><b>@AudioManager.CurrentSong.Name</b></p>
-                    <p class="ellepsis">@AudioManager.CurrentSong.Singer</p>
+            <div style="display:flex;justify-content:center">
+                <div style="display:flex;flex-direction:column;align-items:center;color:white;margin:40px 20px;">
+                    <div>
+                        <p class="ellepsis"><b>@AudioManager.CurrentSong.Name</b></p>
+                        <p class="ellepsis">@AudioManager.CurrentSong.Singer</p>
+                    </div>
                 </div>
             </div>
+
             <div style="position:absolute;bottom:60px;width:100vw">
                 <div style="display:flex;justify-content:space-between;margin:20px 40px">
                     <img src=@("./images/download.svg") height="32" width="32" />
@@ -29,29 +32,34 @@
                     </div>
                     <input type="range" value="@((int)AudioManager.MediaPlayer.Position.TotalSeconds)"
                            max="@((int)AudioManager.MediaPlayer.Duration.TotalSeconds)" @oninput="OnInputRangeSlider"
-                           ValueChanged="(d)=>OnSliderChange(d)"/>
+                           ValueChanged="(d)=>OnSliderChange(d)" />
                 </div>
                 <div style="display:flex;justify-content:space-between;margin:30px;align-items:center">
                     <img src="./images/add-to-playlist.svg" height="32" width="32" />
-                    <img src="./images/backward.svg" height="32" width="32" />
+                    <img src="./images/backward.svg" height="32" width="32" @onclick="async()=>await AudioManager.PlayPreviousSongAsync()" />
                     <button style="width:48px;height:48px;border-radius:28px;background:none;border-color:pink" @onclick="HandlePlayPause">
-                    @if (AudioManager.MediaPlayer.CurrentState==MediaElementState.Playing)
-                    {
-                            <img src="./images/pause.svg" height="32" width="32"  />
-                    }
-                    else
-                    {
-                            <img src="./images/play.svg" height="32" width="32"/>
-                    }
+                        @if (AudioManager.MediaPlayer.CurrentState == MediaElementState.Playing)
+                        {
+                            <img src="./images/pause.svg" height="32" width="32" />
+                        }
+                        else if (AudioManager.MediaPlayer.CurrentState == MediaElementState.Opening
+                        || AudioManager.MediaPlayer.CurrentState == MediaElementState.Buffering)
+                        {
+                            <img src="./images/cloud.svg" height="32" width="32" />
+                        }
+                        else
+                        {
+                            <img src="./images/play.svg" height="32" width="32" />
+                        }
                     </button>
 
-                    <img src="./images/forward.svg" height="32" width="32"  />
+                    <img src="./images/forward.svg" height="32" width="32" @onclick="async()=>await AudioManager.PlayNextSongAsync()" />
                     <img src="./images/repeat_all.svg" height="32" width="32" />
 
 
                 </div>
             </div>
-            
+
         </div>
     </div>
 }
@@ -81,18 +89,18 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        flex-direction:column;
+        flex-direction: column;
     }
 
     .cover-image {
         height: 36vh;
         width: 36vh;
-        border-radius:25px;
+        border-radius: 25px;
     }
 
     input[type=range] {
         width: 80vw;
-        height:6px;
+        height: 6px;
     }
 
     #sliderContainer {
@@ -141,7 +149,7 @@
 
     input[type=range]::-webkit-slider-thumb {
         -webkit-appearance: none;
-        appearance:none;
+        appearance: none;
         border: 2px solid;
         border-radius: 50%;
         height: 20px;
@@ -187,7 +195,7 @@
     .range.pink::-webkit-slider-thumb {
         border-color: rgb(255, 53, 127);
     }
-    
+
     input[type=range]::-webkit-slider-thumb:active {
         cursor: -webkit-grabbing;
     }
@@ -195,6 +203,5 @@
     input[type=range]::-moz-range-thumb:active {
         cursor: -moz-grabbing;
     }
-
 
 </style>

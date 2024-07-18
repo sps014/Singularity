@@ -12,9 +12,14 @@
             @if (AudioManager.MediaPlayer.CurrentState == MediaElementState.Playing)
             {
                 <img src="./images/pause.svg" style="margin-right:10px" @onclick="HandlePlayPause"
-                     height="32" width="32" @onclick:stopPropagation="true" />
+                height="32" width="32" @onclick:stopPropagation="true" />
             }
-            else
+            else if (AudioManager.MediaPlayer.CurrentState == MediaElementState.Opening 
+                || AudioManager.MediaPlayer.CurrentState == MediaElementState.Buffering)
+            {
+                <img src="./images/cloud.svg" style="margin-right:10px" />
+            }
+            else 
             {
                 <img src="./images/play.svg" style="margin-right:10px" @onclick="HandlePlayPause"
                      height="32" width="32" @onclick:stopPropagation="true" />

@@ -3,8 +3,13 @@
     <span></span>
     <span></span>
 </div>
-@code {
 
+@code
+{
+    [Parameter]
+    public bool UseLargeSize { get; set; } = false;
+
+    public string Size => UseLargeSize ? "26px" : "13px";
 }
 
 <style>
@@ -12,8 +17,8 @@
         position: relative;
         display: flex;
         justify-content: space-between;
-        width: 13px;
-        height: 13px;
+        width: @Size;
+        height: @Size;
     }
 
     .icon span {

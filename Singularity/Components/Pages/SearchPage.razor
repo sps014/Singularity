@@ -13,24 +13,33 @@
         }
         else
         {
-            for (int i = 0; i < 15; i++)
-            {
-                <MusicTrack/>
-            }
+            <div style="display:flex;justify-content:center;margin-top:100px;width:100vw">
+                <MusicBar UseLargeSize="true" />
+            </div>
         }
 
     }
     else
     {
-        @foreach (var option in SearchSuggestions)
+        if (SearchSuggestions.Count==0)
         {
-            <Glass Class="searchOption" Clicked="()=>OnLinkClicked(option)">
+            <div style="margin-top:60px">
+                <img src="./images/sad.svg" width="36" height="36" />
+                <p>Nothing to display, please search for a song</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var option in SearchSuggestions)
+            {
+                <Glass Class="searchOption" Clicked="()=>OnLinkClicked(option)">
                 <div style="display:flex;margin-left:20px;margin-top:10px;margin-right:10px;align-items:center;justify-content:space-between">
                     <img src="./images/search.svg" width="24" height="24" />
                     <p>@option</p>
                     <img src="./images/link.svg" width="20" height="20"/>
                 </div>
             </Glass>
+            }
         }
 
     }
