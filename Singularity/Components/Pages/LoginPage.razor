@@ -1,0 +1,130 @@
+﻿@page "/login"
+@using System.Net.Mail
+@using System.Text.RegularExpressions
+@inject IJSRuntime runtime
+@inject NavigationManager Nav
+@inject IAuthenticatonService AuthService
+
+<div style="display:flex;height:100vh;display:flex;justify-content:center;align-items:center">
+    <Glass Style="border-radius:30px;padding:10px 10px" Blur="10"
+           BackgroundColor="rgba(0, 0, 109,0.1)" Border="1px solid rgba(120, 0, 0,0.1)">
+
+        <div>
+            <div id="algn">
+                <div id="container">
+                    <p class="head">Login</p>
+                    <div class="input-container">
+                        <input @bind-value="email" type="email" placeholder="Enter email"
+                               class="inpt" @oninput="OnEmailChanged">
+                        <input @bind-value="password" type="password" placeholder="Enter password"
+                               class="inpt" @oninput="OnPasswordChanged">
+
+                        <button value="submit" class="btn" style="color:white;background-color:orange;margin-top:10px"
+                                @onclick="Login">
+                            Login
+                        </button>
+                        <p style="text-align:center;color:yellow">@error</p>
+                    </div>
+
+                    <div style="display:flex">
+                        <button value="submit" class="btn" style="width:150px;color:black" @onclick="GoToSignup">Signup</button>
+                        <button value="submit" class="btn" @onclick="GenerateResetLink"
+                                style="width:150px;background-color:black;color:white">
+                            Forgot Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Glass>
+</div>
+
+<style>
+
+
+    body, html {
+        background: url(./img/login.jpg) no-repeat center center fixed;
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+        overflow-x: hidden;
+        overflow-y: hidden;
+        color: white;
+    }
+
+
+    #container {
+        width: 600px;
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        align-items: center;
+    }
+
+        #container .head {
+            font-weight: 700;
+            font-size: 24px;
+        }
+
+    .input-container {
+        display: flex;
+        flex-direction: column;
+        width: 265px;
+    }
+
+        .input-container .inpt {
+            padding: 10px;
+            margin: 10px 10px;
+            border: 1px solid white;
+            border-radius: 25px;
+            background-color: transparent;
+            color: white;
+        }
+
+    ::placeholder {
+        font-weight: 600;
+        color: white;
+        opacity: 1;
+    }
+
+    .rem-forgot {
+        display: flex;
+        justify-content: space-around;
+        column-gap: 10px;
+        font-size: 11px;
+        font-weight: 400;
+        margin: 8px;
+    }
+
+
+    .btn {
+        margin: 0 12px;
+        padding: 10px 0;
+        border: none;
+        border-radius: 25px;
+        font-weight: 700;
+    }
+
+        .btn:hover {
+            background-color: #ffc3d2;
+        }
+
+    #container .footer {
+        font-size: 11px;
+        font-weight: 400;
+    }
+
+        #container .footer a {
+            text-decoration: none;
+            color: white;
+            font-weight: 700;
+            margin: 0 5px;
+            font-size: 15px
+        }
+
+            #container .footer a:hover {
+                color: #ffc3d2;
+            }
+</style>

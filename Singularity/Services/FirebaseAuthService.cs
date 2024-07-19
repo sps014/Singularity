@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.JSInterop;
 using Microsoft.Maui.ApplicationModel.Communication;
 using Singularity.Contracts;
+using Singularity.Misc;
 using Singularity.Models;
 
 namespace Singularity.Services;
@@ -16,7 +17,7 @@ public class FirebaseAuthService : IAuthenticatonService
     private static bool _firstInstance = true;
     public FirebaseAuthService(IJSRuntime runtime)
     {
-        FirebaseJSReference = new(()=>runtime.InvokeAsync<IJSObjectReference>(
+        FirebaseJSReference = new(() => runtime.InvokeAsync<IJSObjectReference>(
                 "import", "./js/firebase.js").AsTask());
 
     }
@@ -30,11 +31,28 @@ public class FirebaseAuthService : IAuthenticatonService
             var firebaseUser = await module.InvokeAsync<FirebaseUser>("FirebaseCreateUserWithEmailAndPassword", email, password);
             return new User(firebaseUser.User.Uid);
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            var message = FirebaseAuthErrorCodeMapHelper.GetErrorFromException(ex);
+            throw new AuthException(message);
         }
     }
+    public async ValueTask<IUser?> LoginUserAsync(string email, string password)
+    {
+        var module = await FirebaseJSReference.Value;
+
+        try
+        {
+            var firebaseUser = await module.InvokeAsync<FirebaseUser>("FirebaseSignInWithEmailAndPassword", email, password);
+            return new User(firebaseUser.User.Uid);
+        }
+        catch (Exception ex)
+        {
+            var message = FirebaseAuthErrorCodeMapHelper.GetErrorFromException(ex);
+            throw new AuthException(message);
+        }
+    }
+
 
     public async ValueTask<IUser?> GetLoggedInUserAsync()
     {
@@ -44,7 +62,7 @@ public class FirebaseAuthService : IAuthenticatonService
         {
             var firebaseUser = await module.InvokeAsync<FirebaseLoggedUser?>("getCurrentUser");
 
-            if(firebaseUser == null) 
+            if (firebaseUser == null)
                 return null;
 
             return new User(firebaseUser.Uid);
@@ -55,20 +73,6 @@ public class FirebaseAuthService : IAuthenticatonService
         }
     }
 
-    public async ValueTask<IUser?> LoginUserAsync(string email, string password)
-    {
-        var module = await FirebaseJSReference.Value;
-
-        try
-        {
-            var firebaseUser = await module.InvokeAsync<FirebaseUser>("FirebaseSignInWithEmailAndPassword", email, password);
-            return new User(firebaseUser.User.Uid);
-        }
-        catch
-        {
-            return null;
-        }
-    }
 
     public async ValueTask LogoutUserAsync()
     {
@@ -79,7 +83,7 @@ public class FirebaseAuthService : IAuthenticatonService
             await module.InvokeVoidAsync("FirebaseSignOut");
         }
         catch
-        { 
+        {
         }
     }
 
@@ -114,14 +118,14 @@ public class FirebaseAuthService : IAuthenticatonService
     [JSInvokable("authChanged")]
     public void AuthChanged(User? user)
     {
-        if(_firstInstance)
-            OnAuthStateChanged?.Invoke(this,user);
+        if (_firstInstance)
+            OnAuthStateChanged?.Invoke(this, user);
         _firstInstance = false;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if(FirebaseJSReference.IsValueCreated)
+        if (FirebaseJSReference.IsValueCreated)
             await (await FirebaseJSReference.Value).DisposeAsync();
     }
 

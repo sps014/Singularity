@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject IAuthenticatonService AuthService
+@inject NavigationManager NavManager
 
 @if (!userAuthStateRead)
 {
@@ -7,6 +8,10 @@
     <div style="display:flex;justify-content:center;margin-top:100px;width:100vw">
         <MusicBar UseLargeSize="true" />
     </div>
+}
+else if(user==null)
+{
+    @Body
 }
 else
 {
@@ -19,23 +24,6 @@ else
 
 }
 
-
-@code
-{
-    bool userAuthStateRead = false;
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-        await AuthService.WatchAuthStateAsync();
-        AuthService.OnAuthStateChanged += OnAuthStateChanged;
-    }
-
-    private void OnAuthStateChanged(object? sender,IUser? user)
-    {
-        userAuthStateRead = true;
-        StateHasChanged();
-    }
-}
 
 
 <style>
