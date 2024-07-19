@@ -10,7 +10,10 @@
                 <img src="./images/icon.svg" width="40" height="40" />
                 <div class="title">@Title.ToUpper()</div>
             </div>
-            <img src="./images/search.svg" width="28" height="28" @onclick="GoToSearch" />
+            @if (ShowSearchButton)
+            {
+                <img src="./images/search.svg" width="28" height="28" @onclick="GoToSearch" />
+            }
         }
         else
         {

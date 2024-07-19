@@ -32,6 +32,9 @@ public partial class TabBarContentView : IDisposable
     private string lastSearch = string.Empty;
 
     [Parameter]
+    public bool ShowSearchButton { get; set; } = true;
+
+    [Parameter]
     public EventCallback<(string SearchTerm, bool Finalized)> OnSearch { get; set; }
 
     protected override void OnInitialized()

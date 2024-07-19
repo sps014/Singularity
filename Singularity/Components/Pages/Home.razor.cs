@@ -13,5 +13,9 @@ namespace Singularity.Components.Pages;
 public partial class Home
 {
 
+    protected override async Task OnInitializedAsync()
+    {
+        //var user = await AuthService.LoginUserAsync("abcd@gmail.com", "123456");
 
+    }
 }

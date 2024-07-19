@@ -1,11 +1,41 @@
 ﻿@inherits LayoutComponentBase
+@inject IAuthenticatonService AuthService
 
-<div class="layout">
-    <div class="child">
-        @Body
+@if (!userAuthStateRead)
+{
+
+    <div style="display:flex;justify-content:center;margin-top:100px;width:100vw">
+        <MusicBar UseLargeSize="true" />
     </div>
-    <NavMenu />
-</div>
+}
+else
+{
+    <div class="layout">
+        <div class="child">
+            @Body
+        </div>
+        <NavMenu />
+    </div>
+
+}
+
+
+@code
+{
+    bool userAuthStateRead = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await AuthService.WatchAuthStateAsync();
+        AuthService.OnAuthStateChanged += OnAuthStateChanged;
+    }
+
+    private void OnAuthStateChanged(object? sender,IUser? user)
+    {
+        userAuthStateRead = true;
+        StateHasChanged();
+    }
+}
 
 
 <style>
