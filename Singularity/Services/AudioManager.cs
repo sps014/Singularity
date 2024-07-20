@@ -8,6 +8,7 @@ using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Views;
 using Microsoft.Extensions.Logging;
 using Singularity.Contracts;
+using Singularity.Data;
 using Singularity.Models;
 
 namespace Singularity.Services;
@@ -23,8 +24,6 @@ public class AudioManager:BindableObject
     public IReadOnlyList<ISong> QueuedSongs => queuedSongs;
 
     public ISong? CurrentSong => QueuedSongs.FirstOrDefault();
-
-    public LoopMode LoopMode { get; set; } = LoopMode.All;
 
     public MediaElement MediaPlayer =>MediaElement!;
 
@@ -181,7 +180,7 @@ public class AudioManager:BindableObject
         {
             Logger.LogInformation($"Media has ended {CurrentSong?.Id} -> {CurrentSong?.Name}");
 
-            switch (LoopMode)
+            switch (UserSettings.Current.LoopMode)
             {
                 case LoopMode.Same:
                     await MediaPlayer.SeekTo(TimeSpan.Zero);

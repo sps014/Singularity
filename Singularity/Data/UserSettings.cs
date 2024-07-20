@@ -18,8 +18,6 @@ public partial class UserSettings : ObservableObject
 
 #pragma warning disable CS0612 // Type or member is obsolete
     private static UserSettings current = new UserSettings();
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 #pragma warning restore CS0612 // Type or member is obsolete
 
     public static UserSettings Current => current;

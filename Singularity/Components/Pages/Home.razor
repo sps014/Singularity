@@ -2,12 +2,38 @@
 @using Singularity.Components.Layout
 @inject IAuthenticatonService AuthService
 @inject IDatabaseService DbService
+@inject NavigationManager Nav
 
 @if (MainLayout.UserAuthStateRead)
 {
-    <TabBarContentView Title="Home">
-        <h1>Hello, world!</h1>
 
-        Welcome to your new app.
+    <TabBarContentView Title="Home" ShowSearchButton="false">
+        <div style="scrollbar-width:none;overflow-y:auto">
+            <div style="width:98%;height:200px;margin-top:4px;
+                background:url(https://i0.wp.com/news.productioncrate.com/wp-content/uploads/2023/12/AI_HEadphones.png?fit=1030%2C577&ssl=1);
+                background-size:100% 100%; overflow-x:hidden;
+                background-repeat:no-repeat;" @onclick="OpenTopCharts">
+                <p style="margin:10px;margin-top:20px;font-weight:bold;font-size:large;text-align:left">Top Charts</p>
+            </div>
+
+            @if (ExploreItems != null)
+            {
+                <div style="display:flex;flex-wrap:wrap;justify-content:space-evenly;scrollbar-width:none">
+                    @foreach (var item in ExploreItems)
+                    {
+                        <Glass Blur="40" Style="height:100px;margin:4px;width:80px;padding:4px;border-radius:10px;"
+                               BackgroundColor="rgba(255, 255, 255,0.1)" Border="1px solid rgba(255, 255, 0,0.1)"
+                               Clicked="()=>OpenExploreItem(item)">
+
+                            <div style="display:flex;flex-direction:column;align-items:center;">
+                                <img src="@item.Thumbnail" width="70" height="70" style="margin:5px" />
+                                <p style="margin:2px">@item.Name</p>
+                            </div>
+                        </Glass>
+                    }
+                </div>
+            }
+        </div>
+
     </TabBarContentView>
 }
