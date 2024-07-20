@@ -1,5 +1,6 @@
 ﻿@using CommunityToolkit.Maui.Core.Primitives
 @using Singularity
+@using Singularity.Data
 @if (AudioManager.CurrentSong != null)
 {
     <NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
@@ -22,7 +23,15 @@
             <div style="position:absolute;bottom:60px;width:100vw">
                 <div style="display:flex;justify-content:space-between;margin:20px 40px">
                     <img src=@("./images/download.svg") height="32" width="32" />
-                    <img src=@("./images/solid-heart.svg") height="32" width="32" />
+
+                    @if(UserSettings.Current.IsLiked(AudioManager.CurrentSong))
+                    {
+                        <img src=@("./images/solid-heart.svg") height="32" width="32" @onclick="AddOrRemoveFromLiked"/>
+                    }
+                    else
+                    {
+                        <img src=@("./images/heart.svg") height="32" width="32" @onclick="AddOrRemoveFromLiked" />
+                    }
                 </div>
 
                 <div>

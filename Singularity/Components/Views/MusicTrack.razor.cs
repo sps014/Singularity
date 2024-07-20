@@ -20,6 +20,9 @@ public partial class MusicTrack:IDisposable
     [Parameter]
     public ISong? Song { get; set; }
 
+    [Parameter]
+    public string? SongId { get; set; }
+
     private bool IsPlaying = false;
     private bool isSongLoading = false;
 
@@ -30,6 +33,15 @@ public partial class MusicTrack:IDisposable
     {
         base.OnInitialized();
         AudioManager.MediaPlayer.StateChanged += MediaStateChanged;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Song == null && SongId != null)
+        {
+            Song = await MusicHub.GetSongMetaDataAsync(SongId);
+            StateHasChanged();
+        }
+        await base.OnInitializedAsync();
     }
     private async void MediaStateChanged(object? sender, MediaStateChangedEventArgs e)
     {

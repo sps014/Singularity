@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -16,9 +17,13 @@ public partial class UserSettings : ObservableObject
     [ObservableProperty]
     LoopMode loopMode = LoopMode.All;
 
+    [ObservableProperty]
+    ObservableCollection<string> likedSongs = new ObservableCollection<string>();
+
 #pragma warning disable CS0612 // Type or member is obsolete
     private static UserSettings current = new UserSettings();
 #pragma warning restore CS0612 // Type or member is obsolete
+
 
     public static UserSettings Current => current;
 
@@ -56,5 +61,25 @@ public partial class UserSettings : ObservableObject
 
         base.OnPropertyChanged(e);
         await SaveSettingsInDb(DataBaseService);
+    }
+
+    public async ValueTask AddToLikeAsync(ISong song)
+    {
+        if (DataBaseService==null || IsLiked(song)) return;
+
+        LikedSongs.Add(song.Id);
+        await SaveSettingsInDb(DataBaseService);
+    }
+    public async ValueTask RemoveFromLikeAsync(ISong song)
+    {
+        if (DataBaseService == null || !IsLiked(song)) return;
+
+        LikedSongs.Remove(song.Id);
+        await SaveSettingsInDb(DataBaseService);
+    }
+
+    public bool IsLiked(ISong song)
+    {
+        return LikedSongs.Contains(song.Id);
     }
 }

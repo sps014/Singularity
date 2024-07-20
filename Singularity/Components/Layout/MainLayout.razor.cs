@@ -25,8 +25,8 @@ public partial class MainLayout:IDisposable
     private void OnAuthStateChanged(object? sender, IUser? user)
     {
         UserAuthStateRead = true;
-        StateHasChanged();
         this.user = user;
+        StateHasChanged();
 
         if (user == null)
             NavManager.NavigateTo("/login");

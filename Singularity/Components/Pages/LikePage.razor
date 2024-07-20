@@ -1,0 +1,30 @@
+﻿@page "/like"
+@using System.Collections.Specialized
+@using Singularity.Data
+@implements IDisposable
+
+<TabBarContentView Title="Liked Songs" ShowSearchButton="false">
+
+    @foreach (var songId in UserSettings.Current.LikedSongs.Reverse())
+    {
+        <MusicTrack SongId="@songId"></MusicTrack>
+    }
+
+</TabBarContentView>
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        UserSettings.Current.LikedSongs.CollectionChanged += OnListChanged;
+    }
+    void OnListChanged(object? sender,NotifyCollectionChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+    public void Dispose()
+    {
+        UserSettings.Current.LikedSongs.CollectionChanged -= OnListChanged;
+    }
+}

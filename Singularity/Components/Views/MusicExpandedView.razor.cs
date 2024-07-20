@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Maui.Core.Primitives;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Singularity.Data;
 using Singularity.Services;
 
 namespace Singularity.Components.Views;
@@ -77,6 +78,21 @@ public partial class MusicExpandedView: IDisposable
             await AudioManager.PlayAsync();
             StateHasChanged();
         }
+    }
+
+    private async Task AddOrRemoveFromLiked()
+    {
+        if (AudioManager.CurrentSong == null)
+            return;
+
+        if(!UserSettings.Current.IsLiked(AudioManager.CurrentSong))
+        {
+            await UserSettings.Current.AddToLikeAsync(AudioManager.CurrentSong);
+        }
+        else
+            await UserSettings.Current.RemoveFromLikeAsync(AudioManager.CurrentSong);
+
+        StateHasChanged();
     }
 
     private void OnInputRangeSlider(ChangeEventArgs e)
