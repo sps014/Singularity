@@ -28,6 +28,7 @@ public partial class UserSettings : ObservableObject
     public static UserSettings Current => current;
 
     private static IDatabaseService? DataBaseService;
+    private static bool loadedFromDb = false;
 
     [Obsolete]
     public UserSettings()
@@ -47,10 +48,14 @@ public partial class UserSettings : ObservableObject
         if (online == null)  return;
         
         current = online;
+        loadedFromDb = true;
     }
 
     public static ValueTask SaveSettingsInDb(IDatabaseService databaseService)
     {
+        if (!loadedFromDb)
+            return ValueTask.CompletedTask;
+
         return databaseService.UpdateTableAsync(nameof(UserSettings),current);
     }
 
