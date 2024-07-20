@@ -13,5 +13,12 @@ public interface IMusicPlaylist
     string Singer { get; set; }
     string Description { get; set; }
     string ThumbnailUrl { get; set; }
+    PlaylistType Type { get; set; }
     IAsyncEnumerable<ISong> GetAsync();
+}
+
+public enum PlaylistType
+{
+    Online,
+    UserMade
 }

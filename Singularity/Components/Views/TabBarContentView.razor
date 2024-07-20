@@ -14,6 +14,10 @@
             {
                 <img src="./images/search.svg" width="28" height="28" @onclick="GoToSearch" />
             }
+            @if (ShowAddButton)
+            {
+                <img src="./images/plus.svg" width="28" height="28" @onclick="()=>AddButtonClicked.InvokeAsync()" />
+            }
         }
         else
         {

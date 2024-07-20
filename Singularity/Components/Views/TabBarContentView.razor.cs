@@ -26,13 +26,22 @@ public partial class TabBarContentView : IDisposable
     public AudioManager AudioManager { get; set; }
 #nullable restore
 
+    [Parameter]
+    public bool ShowSearchButton { get; set; } = false;
+    
+    [Parameter]
+    public bool ShowAddButton { get; set; } = false;
+
+    [Parameter]
+    public EventCallback AddButtonClicked { get; set; }
+
+
     private bool IsSearchPage => Nav.Uri.EndsWith("search");
 
     private bool isMusicViewInitialized = false;
     private string lastSearch = string.Empty;
 
-    [Parameter]
-    public bool ShowSearchButton { get; set; } = true;
+   
 
     [Parameter]
     public EventCallback<(string SearchTerm, bool Finalized)> OnSearch { get; set; }

@@ -58,6 +58,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Remove="Components\Pages\UserPlaylistPage.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="BlazorBindGen" Version="0.0.3.7" />
         <PackageReference Include="CommunityToolkit.Maui" Version="9.0.2" />
         <PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="4.0.1" />
@@ -67,6 +71,18 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
         <PackageReference Include="YoutubeExplode" Version="6.3.16" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <UpToDateCheckInput Remove="Components\Pages\UserPlaylistPage.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Components\Pages\UserPlaylistPage.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="Components\Pages\UserPlaylistPage.razor" />
     </ItemGroup>
 
 </Project>

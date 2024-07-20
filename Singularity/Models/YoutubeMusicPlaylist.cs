@@ -19,6 +19,8 @@ internal class YoutubeMusicPlaylist : IMusicPlaylist
     public required string Singer { get; set; }
     public YoutubeMusicHub YoutubeMusicHub { get; }
 
+    public PlaylistType Type { get; set; } = PlaylistType.Online;
+
     public YoutubeMusicPlaylist(YoutubeMusicHub youtubeMusicHub)
     {
         YoutubeMusicHub = youtubeMusicHub;
