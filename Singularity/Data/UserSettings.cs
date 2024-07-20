@@ -72,7 +72,7 @@ public partial class UserSettings : ObservableObject
     {
         if (DataBaseService==null || IsLiked(song)) return;
 
-        LikedSongs.Add(song.Id);
+        LikedSongs.Insert(0,song.Id);
         await SaveSettingsInDb(DataBaseService);
     }
     public async ValueTask RemoveFromLikeAsync(ISong song)

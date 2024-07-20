@@ -11,8 +11,7 @@ namespace Singularity.Components.Layout;
 public partial class MainLayout:IDisposable
 {
     internal static bool UserAuthStateRead = false;
-    IUser? user;
-
+    internal static IUser? User;
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -25,7 +24,7 @@ public partial class MainLayout:IDisposable
     private void OnAuthStateChanged(object? sender, IUser? user)
     {
         UserAuthStateRead = true;
-        this.user = user;
+        User = user;
         StateHasChanged();
 
         if (user == null)

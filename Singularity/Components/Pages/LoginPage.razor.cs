@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using Singularity.Components.Layout;
 
 namespace Singularity.Components.Pages;
 
@@ -54,7 +55,7 @@ public partial class LoginPage
 
         try
         {
-            var user = await AuthService.LoginUserAsync(email, password);
+            MainLayout.User = await AuthService.LoginUserAsync(email, password);
             Nav.NavigateTo("/");
         }
         catch(Exception e)

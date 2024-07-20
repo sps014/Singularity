@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components;
 using Singularity.Services;
+using CommunityToolkit.Maui.Core.Primitives;
 
 namespace Singularity.Components.Views;
 
@@ -50,6 +51,8 @@ public partial class TabBarContentView : IDisposable
     {
         base.OnInitialized();
         AudioManager.MediaPlayer.StateChanged += MediaPlayer_StateChanged;
+        isMusicViewInitialized = AudioManager.MediaPlayer.CurrentState == MediaElementState.Playing;
+        StateHasChanged(); 
     }
 
     private async void MediaPlayer_StateChanged(object? sender, CommunityToolkit.Maui.Core.Primitives.MediaStateChangedEventArgs e)

@@ -42,7 +42,7 @@ public static class FirebaseAuthErrorCodeMapHelper
         ["auth/invalid-dynamic-link-domain"] = "The dynamic link domain is invalid.",
         ["auth/invalid-email"] = "Invalid email address.",
         ["auth/invalid-emulator-scheme"] = "Invalid emulator scheme.",
-        ["auth/invalid-credential"] = "Invalid Identity Provider response.",
+        ["auth/invalid-credential"] = "Invalid Email or password.",
         ["auth/invalid-message-payload"] = "Invalid message payload.",
         ["auth/invalid-multi-factor-session"] = "Invalid multi-factor authentication session.",
         ["auth/invalid-oauth-client-id"] = "Invalid OAuth client ID.",

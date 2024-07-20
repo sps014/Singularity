@@ -18,10 +18,9 @@ public partial class Home
     private ExploreItem[]? ExploreItems;
     private const string TopChartPlaylistId = "PLPit0qsdr5cfYbW72VPdIX_2DRYUDJDGY";
     private static bool firstDbReadDone = false;
-
     protected override async Task OnInitializedAsync()
     {
-        if (!MainLayout.UserAuthStateRead)
+        if (!MainLayout.UserAuthStateRead || MainLayout.User == null)
             return;
 
         ExploreItems = await ExploreItem.LoadAsync();
