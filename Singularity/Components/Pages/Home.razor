@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Singularity.Components.Layout
 @inject IAuthenticatonService AuthService
+@inject IDatabaseService DbService
 
 @if (MainLayout.UserAuthStateRead)
 {

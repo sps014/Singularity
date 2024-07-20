@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 
 namespace Singularity.Contracts;
 
-public interface IDatabaseService
+public interface IDatabaseService: IAsyncDisposable
 {
     ValueTask ConnectAsync();
-    ValueTask<IDbTable> GetTableAsync(string tableName);
-    ValueTask<IDbTable> CreateTableAsync<T>(string tableName,T table) where T:class;
+    ValueTask<IDbTable?> GetTableAsync(string tableName);
+    ValueTask CreateTableAsync<T>(string tableName,T tableData) where T:class;
+    ValueTask DeleteTableAsync(string tableName);
+    ValueTask UpdateTableAsync<T>(string tableName, T tableData) where T:class;
+
 }

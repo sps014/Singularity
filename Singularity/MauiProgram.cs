@@ -21,6 +21,8 @@ namespace Singularity
 
             builder.Services.AddSingleton<IMusicHub,YoutubeMusicHub>();
             builder.Services.AddTransient<IAuthenticatonService, FirebaseAuthService>();
+            builder.Services.AddTransient<IDatabaseService, FirestoreDbService>();
+
             builder.Services.AddSingleton<AudioManager>();
 
             builder.Services.AddMauiBlazorWebView();

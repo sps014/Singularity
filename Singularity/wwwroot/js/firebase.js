@@ -5,6 +5,10 @@ import {
     signInWithEmailAndPassword, sendPasswordResetEmail, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
 
+import {
+    getFirestore, doc, setDoc, addDoc, updateDoc, collection, getDocs, getDoc, deleteDoc, deleteField
+} from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js'
+
 
 const firebaseConfig = {
     apiKey: "AIzaSyBng5YuwbN9of_gVycZyAx9tpx3ItO_LpU",
@@ -18,6 +22,8 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 setPersistence(getAuth(app), browserLocalPersistence);
 
@@ -50,4 +56,23 @@ export function subAuthStateChanged(dotnet) {
     onAuthStateChanged(getAuth(app), (data) => {
         dotnet.invokeMethodAsync("authChanged", data);
     });
+}
+
+export function FirestoreSetDoc(path, data) {
+    return setDoc(doc(db, path), data);
+}
+export function FirestoreGetDoc(path) {
+    return getDoc(doc(db, path));
+}
+export function FirestoreUpdateDoc(docPath, data) {
+    return updateDoc(doc(db,docPath), data);
+}
+export function FirestoreDeleteField(docPath, columnName) {
+    return updateDoc(doc(db, docPath),
+        {
+            columnName: deleteField()
+        });
+}
+export function FirestoreDeleteDoc(docPath) {
+    return deleteDoc(doc(db, docPath));
 }

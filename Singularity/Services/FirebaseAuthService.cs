@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BlazorBindGen;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Microsoft.Maui.ApplicationModel.Communication;
 using Singularity.Contracts;
@@ -13,13 +15,19 @@ namespace Singularity.Services;
 
 public class FirebaseAuthService : IAuthenticatonService
 {
-    private Lazy<Task<IJSObjectReference>> FirebaseJSReference { get; }
-    private static bool _firstInstance = true;
-    public FirebaseAuthService(IJSRuntime runtime)
-    {
-        FirebaseJSReference = new(() => runtime.InvokeAsync<IJSObjectReference>(
-                "import", "./js/firebase.js").AsTask());
+    private Lazy<Task<JObjPtr>> FirebaseJSReference { get; }
+    public ILogger<FirebaseAuthService> Logger { get; }
 
+    private static bool _firstInstance = true;
+    public FirebaseAuthService(IJSRuntime runtime,ILogger<FirebaseAuthService> logger)
+    {
+        Logger = logger;
+        FirebaseJSReference = new(async() =>
+        {
+            await BindGen.InitAsync(runtime);
+            Logger.LogInformation("creating auth service instance");
+            return await BindGen.ImportRefAsync("/js/firebase.js");
+        });
     }
 
     public async ValueTask<IUser?> CreateUserAsync(string email, string password)
@@ -28,12 +36,14 @@ public class FirebaseAuthService : IAuthenticatonService
 
         try
         {
-            var firebaseUser = await module.InvokeAsync<FirebaseUser>("FirebaseCreateUserWithEmailAndPassword", email, password);
+            var firebaseUser = await module.CallAsync<FirebaseUser>("FirebaseCreateUserWithEmailAndPassword", email, password);
+            Logger.LogInformation("user created successfully with email"+email);
             return new User(firebaseUser.User.Uid);
         }
         catch (Exception ex)
         {
             var message = FirebaseAuthErrorCodeMapHelper.GetErrorFromException(ex);
+            Logger.LogError(ex,"Can't create user");
             throw new AuthException(message);
         }
     }
@@ -43,12 +53,14 @@ public class FirebaseAuthService : IAuthenticatonService
 
         try
         {
-            var firebaseUser = await module.InvokeAsync<FirebaseUser>("FirebaseSignInWithEmailAndPassword", email, password);
+            var firebaseUser = await module.CallAsync<FirebaseUser>("FirebaseSignInWithEmailAndPassword", email, password);
+            Logger.LogInformation("user logged in successfully with email" + email);
             return new User(firebaseUser.User.Uid);
         }
         catch (Exception ex)
         {
             var message = FirebaseAuthErrorCodeMapHelper.GetErrorFromException(ex);
+            Logger.LogError(ex, "Can't login user");
             throw new AuthException(message);
         }
     }
@@ -60,15 +72,18 @@ public class FirebaseAuthService : IAuthenticatonService
 
         try
         {
-            var firebaseUser = await module.InvokeAsync<FirebaseLoggedUser?>("getCurrentUser");
+            var firebaseUser = await module.CallAsync<FirebaseLoggedUser?>("getCurrentUser");
+
+            Logger.LogInformation("user fetched successfully with uid:" + firebaseUser?.Uid);
 
             if (firebaseUser == null)
                 return null;
 
             return new User(firebaseUser.Uid);
         }
-        catch
+        catch(Exception ex) 
         {
+            Logger.LogError(ex, "Can't get current user");
             return null;
         }
     }
@@ -80,10 +95,12 @@ public class FirebaseAuthService : IAuthenticatonService
 
         try
         {
-            await module.InvokeVoidAsync("FirebaseSignOut");
+            await module.CallVoidAsync("FirebaseSignOut");
+            Logger.LogInformation("user logged out successfully");
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogError(ex, "Can't logout current user");
         }
     }
 
@@ -93,11 +110,13 @@ public class FirebaseAuthService : IAuthenticatonService
 
         try
         {
-            await module.InvokeVoidAsync("FirebaseGeneratePasswordResetLink", email);
+            await module.CallVoidAsync("FirebaseGeneratePasswordResetLink", email);
+            Logger.LogInformation("password reset link sent successfully");
             return true;
         }
-        catch
+        catch(Exception e)
         {
+            Logger.LogError(e, "Can't send reset link for "+email);
             return false;
         }
     }
@@ -108,25 +127,29 @@ public class FirebaseAuthService : IAuthenticatonService
 
         try
         {
-            await module.InvokeVoidAsync("subAuthStateChanged", DotNetObjectReference.Create(this));
+            await module.CallVoidAsync("subAuthStateChanged", DotNetObjectReference.Create(this));
+            Logger.LogInformation("started watching auth state change ");
         }
-        catch
+        catch (Exception e)
         {
+            Logger.LogError(e, "cant start watching auth state change ");
         }
     }
 
     [JSInvokable("authChanged")]
     public void AuthChanged(User? user)
     {
+        Logger.LogInformation(" auth state change ->"+user);
+
         if (_firstInstance)
             OnAuthStateChanged?.Invoke(this, user);
         _firstInstance = false;
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (FirebaseJSReference.IsValueCreated)
-            await (await FirebaseJSReference.Value).DisposeAsync();
+        Logger.LogInformation(" auth desstroyed");
+        return ValueTask.CompletedTask;
     }
 
     public event EventHandler<IUser?>? OnAuthStateChanged;

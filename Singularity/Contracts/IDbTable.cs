@@ -8,8 +8,9 @@ namespace Singularity.Contracts;
 
 public interface IDbTable
 {
-    ValueTask SetValue<T>(string columnName, T value);
-    ValueTask<T> GetValue<T>(string columnName);
-    ValueTask<bool> DeleteValue(string columnName);
-    ValueTask<T> ToAsync<T>();
+    ValueTask<string?> GetIdAsync();
+    ValueTask<bool> SetValueAsync<T>(string columnName, T value);
+    ValueTask<T?> GetValueAsync<T>(string columnName);
+    ValueTask<bool> DeleteValueAsync(string columnName);
+    ValueTask<T?> ToAsync<T>();
 }
