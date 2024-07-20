@@ -13,7 +13,7 @@ public partial class SearchPage
 {
     public bool IsInSearchTypeMode { get; private set; } = true;
     public ICollection<string> SearchSuggestions { get; private set; } = new List<string>();
-    public ICollection<ISong> SearchedSongList { get; private set; } = new List<ISong>();
+    public IAsyncEnumerable<ISong>? SearchedSongList { get; private set; }
     public bool IsSearchComplete { get; private set; } = true;
 
 #nullable disable
@@ -57,7 +57,7 @@ public partial class SearchPage
         await SearchSemaphore.WaitAsync();
         IsSearchComplete = false;
 
-        SearchedSongList = await MusicHub.SearchAsync(e.Query,searchCancellation,15);
+        SearchedSongList = MusicHub.SearchAsync(e.Query,searchCancellation);
 
         SearchSemaphore.Release();
         IsSearchComplete = true;

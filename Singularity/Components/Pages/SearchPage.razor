@@ -5,11 +5,8 @@
     {
         @if (IsSearchComplete)
         {
-            @foreach (var audio in SearchedSongList)
-            {
-                <MusicTrack Song="audio"/>
-            }
 
+            <SmartMusicListView Songs="SearchedSongList"/>
         }
         else
         {

@@ -120,38 +120,25 @@ public class YoutubeMusicHub : IMusicHub
             return new List<string>();
         }
     }
-    public async ValueTask<ICollection<ISong>> SearchAsync(string query, CancellationTokenSource searchCancellation, int maxCount = 10)
+    public async IAsyncEnumerable<ISong> SearchAsync(string query, CancellationTokenSource searchCancellation)
     {
 
         Logger.LogInformation($"showing result for {nameof(SearchAsync)}");
 
-        var list = new List<ISong>();
-        try
+        await foreach (var video in YoutubeClient.Search.GetVideosAsync(query, searchCancellation.Token))
         {
-            int i = 0;
-            await foreach (var video in YoutubeClient.Search.GetVideosAsync(query, searchCancellation.Token))
-            {
-                if (i > maxCount)
-                    break;
 
-                i++;
-                var song = new YouTubeSong(this)
-                {
-                    Description = string.Empty,
-                    Duration = video.Duration,
-                    Id = video.Id,
-                    Name = video.Title,
-                    Singer = video.Author.ChannelTitle,
-                    ThumbnailUrl = video.Thumbnails.GetWithHighestResolution().Url
-                };
-                list.Add(song);
-            }
-            return list;
-        }
-        catch(Exception ex) 
-        {
-            Logger.LogError(ex, "Cant search right now");
-            return new List<ISong>();
+            var song = new YouTubeSong(this)
+            {
+                Description = string.Empty,
+                Duration = video.Duration,
+                Id = video.Id,
+                Name = video.Title,
+                Singer = video.Author.ChannelTitle,
+                ThumbnailUrl = video.Thumbnails.GetWithHighestResolution().Url
+            };
+
+            yield return song;
         }
     }
 

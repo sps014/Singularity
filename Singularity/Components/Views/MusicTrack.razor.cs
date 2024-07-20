@@ -37,10 +37,11 @@ public partial class MusicTrack:IDisposable
     protected override async Task OnInitializedAsync()
     {
         if (Song == null && SongId != null)
-        {
             Song = await MusicHub.GetSongMetaDataAsync(SongId);
-            StateHasChanged();
-        }
+
+        UpdateIsPlaying();
+        StateHasChanged();
+
         await base.OnInitializedAsync();
     }
     private async void MediaStateChanged(object? sender, MediaStateChangedEventArgs e)
