@@ -1,0 +1,62 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Singularity.Contracts;
+using Singularity.Models;
+
+namespace Singularity.Data;
+
+public partial class UserSettings : ObservableObject
+{
+
+    [ObservableProperty]
+    LoopMode loopMode = LoopMode.All;
+
+#pragma warning disable CS0612 // Type or member is obsolete
+    private static UserSettings current = new UserSettings();
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+#pragma warning restore CS0612 // Type or member is obsolete
+
+    public static UserSettings Current => current;
+
+    private static IDatabaseService? DataBaseService;
+
+    [Obsolete]
+    public UserSettings()
+    {
+
+    }
+
+    public static async ValueTask LoadSettingsFromDb(IDatabaseService databaseService)
+    {
+        DataBaseService = databaseService;
+
+        var table = await databaseService.GetTableAsync(nameof(UserSettings));
+
+        if (table == null) return;
+
+        var online = await table.ToAsync<UserSettings>();
+        if (online == null)  return;
+        
+        current = online;
+    }
+
+    public static ValueTask SaveSettingsInDb(IDatabaseService databaseService)
+    {
+        return databaseService.UpdateTableAsync(nameof(UserSettings),current);
+    }
+
+    protected override async void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        if (DataBaseService == null)
+            return;
+
+        base.OnPropertyChanged(e);
+        await SaveSettingsInDb(DataBaseService);
+    }
+}

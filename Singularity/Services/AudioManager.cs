@@ -8,6 +8,7 @@ using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Views;
 using Microsoft.Extensions.Logging;
 using Singularity.Contracts;
+using Singularity.Models;
 
 namespace Singularity.Services;
 
@@ -202,11 +203,4 @@ public class AudioManager:BindableObject
         Logger.LogInformation($"Paused {CurrentSong.Id}");
         MediaPlayer.Pause();
     }
-}
-
-public enum LoopMode
-{
-    All,
-    None,
-    Same
 }
