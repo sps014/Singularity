@@ -166,6 +166,7 @@ public class YoutubeMusicHub : IMusicHub
                 Id = playlist.Id,
                 Name = playlist.Title,
                 ThumbnailUrl = playlist.Thumbnails.GetWithHighestResolution().Url,
+                Singer = playlist.Author != null ? playlist.Author.ChannelTitle : string.Empty
             };
         }
         catch (Exception ex)

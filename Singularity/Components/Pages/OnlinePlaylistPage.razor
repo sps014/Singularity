@@ -1,0 +1,27 @@
+﻿@page "/onlinePlaylist/{Id}"
+@inject IMusicHub MusicHub
+
+<TabBarContentView Title="Playlist">
+
+@if(playlist!=null)
+{
+    <div style="display:flex;margin-top:20px;flex-direction:column;align-items:center;height:250px">
+        <img src="@playlist.ThumbnailUrl"
+             style="border-radius:15px;width:200px;height:160px" />
+        <div style="display:flex;flex-direction:column;margin:10px;align-items:flex-start">
+            <p style="margin-top:20px;font-weight:bold;font-size:medium;">@playlist.Name</p>
+            <p style="margin-top:16px;">@playlist.Singer</p>
+        </div>
+    </div>
+
+    <SmartMusicListView Songs="Songs"/>
+}
+else
+{
+    <p>Nothing to show here</p>
+}
+</TabBarContentView>
+
+@code {
+
+}

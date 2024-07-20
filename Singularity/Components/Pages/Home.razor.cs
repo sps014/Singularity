@@ -41,7 +41,7 @@ public partial class Home
     }
     private string GetPlaylistUrl(string id)
     {
-        return $"/youtubePlaylist/{id}";
+        return $"/onlinePlaylist/{id}";
     }
     private void OpenTopCharts()
     {
