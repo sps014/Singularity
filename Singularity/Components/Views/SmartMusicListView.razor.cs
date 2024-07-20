@@ -16,13 +16,13 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
     public IAsyncEnumerable<ISong>? Songs { get; set; }
 
     [Parameter]
-    public int ViewItemCount { get; set; } = 10;
+    public int ViewItemCount { get; set; } = 15;
 
     public List<ISong> ResizableSongsList = new List<ISong>();
 
     private ElementReference endElement;
 
-    private DotNetObjectReference<SmartMusicListView> dotnetObjectReference;
+    private DotNetObjectReference<SmartMusicListView>? dotnetObjectReference;
 
     private bool isFinishedLoading = false;
 
@@ -44,7 +44,7 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
         if (!firstRender)
             return;
 
-        await BindGen.Window.CallVoidAsync("subscribeObserver", endElement,dotnetObjectReference);
+        await BindGen.Window.CallVoidAsync("subscribeObserver", endElement,dotnetObjectReference!);
     }
 
     private async ValueTask AddNextSongBatch()
@@ -78,6 +78,8 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
     [JSInvokable("visibiltyChanged")]
     public async void VisibiltyChanged(bool visible)
     {
+        if (!visible)
+            return;
         await AddNextSongBatch();
     }
 }
