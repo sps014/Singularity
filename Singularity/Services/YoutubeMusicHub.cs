@@ -100,18 +100,31 @@ public class YoutubeMusicHub : IMusicHub
 
     public async ValueTask<ICollection<string>> SuggestionsAsync(string query, CancellationTokenSource searchCancellation)
     {
-        var original = query;
-        query = Uri.EscapeDataString(query);
-        query = SearchUrl + query;
-        var res = await Http.GetAsync(query, searchCancellation.Token);
-        var js = await res.Content.ReadAsStringAsync(searchCancellation.Token);
+        try
+        {
+            Logger.LogInformation($"Suggesting {query}");
 
-        var parts = js.Split('[').Where(t => t.Split('"').Length > 2).Select(t => t.Split('"')[1]);
+            var original = query;
+            query = Uri.EscapeDataString(query);
+            query = SearchUrl + query;
+            var res = await Http.GetAsync(query, searchCancellation.Token);
+            var js = await res.Content.ReadAsStringAsync(searchCancellation.Token);
 
-        return parts.Distinct().ToList();
+            var parts = js.Split('[').Where(t => t.Split('"').Length > 2).Select(t => t.Split('"')[1]);
+
+            return parts.Distinct().ToList();
+        }
+        catch(Exception ex)
+        {
+            Logger.LogError(ex, "Cant suggest right now");
+            return new List<string>();
+        }
     }
     public async ValueTask<ICollection<ISong>> SearchAsync(string query, CancellationTokenSource searchCancellation, int maxCount = 10)
     {
+
+        Logger.LogInformation($"showing result for {nameof(SearchAsync)}");
+
         var list = new List<ISong>();
         try
         {
@@ -135,9 +148,30 @@ public class YoutubeMusicHub : IMusicHub
             }
             return list;
         }
-        catch
+        catch(Exception ex) 
         {
+            Logger.LogError(ex, "Cant search right now");
             return new List<ISong>();
+        }
+    }
+
+    public async ValueTask<IMusicPlaylist?> GetPlaylistAsync(string id)
+    {
+        try
+        {
+            var playlist = await YoutubeClient.Playlists.GetAsync(id);
+            return new YoutubeMusicPlaylist(this)
+            {
+                Description = playlist.Description,
+                Id = playlist.Id,
+                Name = playlist.Title,
+                ThumbnailUrl = playlist.Thumbnails.GetWithHighestResolution().Url,
+            };
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "cant fetch playlist metadata ->"+id);
+            return null;
         }
     }
 }
