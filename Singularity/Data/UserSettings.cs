@@ -87,4 +87,14 @@ public partial class UserSettings : ObservableObject
     {
         return LikedSongs.Contains(song.Id);
     }
+
+    public async IAsyncEnumerable<ISong> GetLikedSongAsync(IMusicHub musicHub)
+    {
+        foreach (var songId in LikedSongs.Reverse())
+        {
+           var song = await musicHub.GetSongMetaDataAsync(songId);
+            if (song == null) continue;
+            yield return song;
+        }
+    }
 }

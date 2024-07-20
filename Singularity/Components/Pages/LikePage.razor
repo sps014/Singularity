@@ -2,22 +2,23 @@
 @using System.Collections.Specialized
 @using Singularity.Data
 @implements IDisposable
+@inject IMusicHub MusicHub
 
 <TabBarContentView Title="Liked Songs" ShowSearchButton="false">
 
-    @foreach (var songId in UserSettings.Current.LikedSongs.Reverse())
-    {
-        <MusicTrack SongId="@songId"></MusicTrack>
-    }
+    <SmartMusicListView Songs="LikedSongs"/>
 
 </TabBarContentView>
 
 
 @code {
+    IAsyncEnumerable<ISong>? LikedSongs;
     protected override void OnInitialized()
     {
         base.OnInitialized();
         UserSettings.Current.LikedSongs.CollectionChanged += OnListChanged;
+        LikedSongs = UserSettings.Current.GetLikedSongAsync(MusicHub);
+        StateHasChanged();
     }
     void OnListChanged(object? sender,NotifyCollectionChangedEventArgs e)
     {

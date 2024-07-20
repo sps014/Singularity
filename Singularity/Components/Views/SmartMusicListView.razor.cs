@@ -58,14 +58,14 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
         int ct = 0;
         await foreach (var song in Songs)
         {
-            if (start > end)
+            if (start >= end)
                 break;
 
             start++;
             ct++;
             ResizableSongsList.Add(song);
         }
-        isFinishedLoading = ct == 0;
+        isFinishedLoading = ct == 0 || ct!=ViewItemCount;
         StateHasChanged();
     }
 
