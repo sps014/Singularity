@@ -23,7 +23,6 @@ public partial class OnlinePlaylistPage
 
     public IAsyncEnumerable<ISong>? Songs;
 
-
     protected override async Task OnInitializedAsync()
     {
         if (Id == null)

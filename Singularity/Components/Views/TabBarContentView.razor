@@ -21,7 +21,7 @@
         }
         else
         {
-            <input @bind-value="lastSearch" id="search" type="search"
+            <input @bind-value="lastSearch" id="search" type="search" tabindex="0"
                    @oninput="OnSearchChanged" @onkeyup="OnSearchFinished" placeholder="search anything here" />
         }
     </div>

@@ -1,9 +1,7 @@
 ﻿@page "/playlist"
 
-<TabBarContentView Title="Your Playlists" ShowAddButton="true" AddButtonClicked="OnPlusButtonClicked">
-
+<TabBarContentView Title="Your Playlists" ShowAddButton="true" AddButtonClicked="OnPlusButtonClicked" Padding="0">
+    <CreateNewPlaylistView IsVisible="addPlaylistNewVisible"/>
+    <PlaylistView/>
 </TabBarContentView>
 
-@code {
-
-}

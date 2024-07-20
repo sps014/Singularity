@@ -14,10 +14,13 @@ public partial class ScollableModalView
     public RenderFragment? ChildContent { get; set; }
 
     [Parameter]
-    public string BackgroundColor { get; set; } = "rgba(60, 33, 146, 0.6)";
+    public string BackgroundColor { get; set; } = "rgba(60, 33, 146, 0.2)";
 
     [Parameter]
     public bool IsActive { get; set; }
+
+    [Parameter]
+    public EventCallback OnCloseButtonClick { get; set; }
 
     protected override void OnInitialized()
     {
@@ -30,6 +33,7 @@ public partial class ScollableModalView
     public void ClosePage()
     {
         IsActive = false;
+        OnCloseButtonClick.InvokeAsync();
         StateHasChanged();
     }
     private void OnBeforeInternalNavigation(LocationChangingContext context)
