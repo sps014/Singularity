@@ -5,3 +5,12 @@
         <MusicTrack Song="song" />
     }
 }
+
+<div @ref="endElement">
+    @if (!isFinishedLoading)
+    {
+        <div style="display:flex;justify-content:center;margin-top:2px;width:100vw">
+            <MusicBar UseLargeSize="true" />
+        </div>
+    }
+</div>

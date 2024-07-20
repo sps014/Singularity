@@ -2,7 +2,7 @@
 @inject NavigationManager Nav
 
 <div id="glassTopHeader">
-    <div style="height:60px;display:flex;justify-content:space-between;align-items:center;margin-left:8px;margin-right:8px;padding:4px;padding-top:8px">
+    <div id="tabView" style="height:60px;display:flex;justify-content:space-between;align-items:center;margin-left:8px;margin-right:8px;padding:4px;padding-top:8px">
 
         @if (!IsSearchPage)
         {
@@ -23,7 +23,7 @@
     </div>
 
 </div>
-<div style="padding: @(Padding);height: calc(100vh - @(!isMusicViewInitialized?130:200)px);overflow-y: auto;scrollbar-width:none" class="scrollbar-hidden">
+<div id="tabViewBody" style="padding: @(Padding);height: calc(100vh - @(!isMusicViewInitialized?130:200)px);overflow-y: auto;scrollbar-width:none" class="scrollbar-hidden">
     @ChildContent
 </div>
 
