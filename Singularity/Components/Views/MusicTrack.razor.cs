@@ -69,8 +69,12 @@ public partial class MusicTrack:IDisposable
         }
 
         isSongLoading = true;
+        StateHasChanged();
+
         await AudioManager.PlayNowAsync(Song);
+
         isSongLoading = false;
+        StateHasChanged();
     }
 
     public void Dispose()
