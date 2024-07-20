@@ -30,8 +30,10 @@ public partial class Home
             return;
         
         await UserSettings.LoadSettingsFromDb(DbService);
+        await PlaylistSettings.LoadSettingsFromDb(DbService);
 
         firstDbReadDone = true;
+
     }
 
     private void OpenExploreItem(ExploreItem item)

@@ -4,33 +4,16 @@
             <p style="color:white;"><b>Give your playlist a name</b></p>
         </div>
         <div style="height: 30%;">
-            <input @bind="playlistName" class="inpt" />
+            <input @bind="playlistName" class="inpt" maxlength="50"/>
         </div>
         <div style="height: 10%;">
-            <button class="btn" style="width:100px;color:white;background-color:deeppink;margin-top:10px">Create</button>
+            <button class="btn" style="width:100px;color:white;background-color:deeppink;margin-top:10px" @onclick="CreateNewPlaylist"
+            >Create</button>
         </div>
 
     </div>
 </ScollableModalView>
 
-@code
-{
-    private string? playlistName;
-    [Parameter]
-    public bool IsVisible { get; set; }
-
-    public void SetOpen()
-    {
-        IsVisible = true;
-        StateHasChanged();
-    }
-    void ToggleAddPlayList()
-    {
-        IsVisible = false;
-        StateHasChanged();
-
-    }
-    }
 
 <style>
     .scroll-child {

@@ -1,1 +1,41 @@
-﻿
+﻿@using Singularity.Data
+@if(PlaylistSettings.Current!=null)
+{
+    <div>
+        @foreach(var playlist in PlaylistSettings.Current.Playlists)
+        {
+            <Glass Blur="20" BackgroundColor="rgba(7, 17, 27, 0.2)" Style="padding:16px 6px;">
+                <div style="display:flex;justify-content:left">
+                    <div style="width: 32px;height: 32px;">
+                        <img class="cover-img" src="./images/music.svg" />
+                    </div>
+                    <div class="detail" style="">
+                        <p style="font-weight:bold" class="ellepsis">@playlist.Value.Name</p>
+                        <div class="ellepsis" style="display:flex;justify-content:space-between">
+                            <span style="margin:3px;font-weight:bold">@playlist.Value.Singer</span>
+                        </div>
+                    </div>
+                </div>
+            </Glass>
+        }
+    </div>
+}
+<style>
+    .detail {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        justify-items: left;
+        align-content: space-between;
+        align-items: start;
+    }
+
+    .cover-img {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 97%;
+        height: 97%;
+    }
+</style>

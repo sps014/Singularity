@@ -27,8 +27,8 @@ public partial class UserSettings : ObservableObject
 
     public static UserSettings Current => current;
 
-    private static IDatabaseService? DataBaseService;
-    private static bool loadedFromDb = false;
+    internal static IDatabaseService? DataBaseService;
+    internal static bool loadedFromDb = false;
 
     [Obsolete]
     public UserSettings()

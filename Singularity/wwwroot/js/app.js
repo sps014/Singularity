@@ -20,3 +20,12 @@ function callback(e) {
         //console.log(this.i+"  -> "+entry.intersectionRatio);
     }
 }
+
+
+window.makeItPressable = (el, dotnet) => {
+    el.addEventListener('long-press', function (e) {
+        dotnet.invokeMethodAsync("longPress");
+    });
+};
+
+
