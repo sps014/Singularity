@@ -18,8 +18,16 @@
     private string? playlistName;
     [Parameter]
     public bool IsVisible { get; set; }
+
+    public void SetOpen()
+    {
+        IsVisible = true;
+        StateHasChanged();
+    }
     void ToggleAddPlayList()
     {
+        IsVisible = false;
+        StateHasChanged();
 
     }
     }
