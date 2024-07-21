@@ -7,10 +7,14 @@
     DeleteButtonClicked="OnDeleteButtonClicked"
     AddButtonClicked="OnPlusButtonClicked" Padding="0">
    
+    <div>
+
     <CreateNewPlaylistView
         @ref="newPlaylistElement" />
+
     <UserPlaylistView @ref="PlaylistView"
         OnPlaylistSelected="PlaylistItemSelected"/>
 
+    </div>
 
 </TabBarContentView>

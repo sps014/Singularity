@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Singularity.Data;
 using Singularity.Models;
+using YoutubeExplode.Playlists;
 
 namespace Singularity.Components.Views;
 
@@ -36,8 +37,19 @@ public partial class UserPlaylistView : IDisposable
 
     private void PlaylistSelected(string id)
     {
-        if (id == null || IsInAddMode)
+        if (IsInAddMode)
+        {
+            playlistId = id;
+            OnPlaylistSelected.InvokeAsync(id);
+            StateHasChanged();
             return;
+        }
+
+        //playlistId is not null if in longselect mode
+        if (playlistId!=null || id == null)
+            return;
+
+       
 
         Nav.NavigateTo("/userPlaylistExpandedPage/" + id);
     }

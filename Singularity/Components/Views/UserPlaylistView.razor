@@ -1,20 +1,20 @@
 ﻿@using Singularity.Data
 @inject NavigationManager Nav
 
-<div>
+<div style="margin:4px 10px;">
     @foreach (var playlist in PlaylistSettings.Current.Playlists)
     {
         <LongPressItem LongPressed="()=>OnLongPressed(playlist.Value)">
             <Glass Blur="20" BackgroundColor="@GetStyle(playlist.Value)" Style="padding:16px 6px;" Clicked="() => PlaylistSelected(playlist.Key)">
-                <div style="display:flex;justify-content:left">
-                    <div style="width: 32px;height: 32px;">
-                        <img class="cover-img-list" src="./images/music.svg"/>
-                    </div>
+                <div style="display:flex;justify-content:space-between;">
                     <div class="detail-list" style="">
-                        <p style="font-weight:bold" class="ellepsis">@playlist.Value.Name</p>
-                        <div class="ellepsis" style="display:flex;justify-content:space-between">
+                        <p style="font-weight:bold" class="ellepsis-list">@playlist.Value.Name</p>
+                        <div class="ellepsis-list" style="display:flex;justify-content:space-between">
                             <span style="margin:3px;font-weight:bold">@playlist.Value.Singer</span>
                         </div>
+                    </div>
+                    <div style="width: 32px;height: 32px;">
+                        <img class="cover-img-list" src="./images/music.svg" />
                     </div>
                 </div>
             </Glass>
@@ -29,6 +29,7 @@
         justify-items: left;
         align-content: space-between;
         align-items: start;
+        margin:0px 10px;
     }
 
     .cover-img-list {
@@ -36,7 +37,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 97%;
-        height: 97%;
+        width: 28px;
+        height: 28px;
     }
 </style>

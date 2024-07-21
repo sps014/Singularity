@@ -4,13 +4,32 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using Singularity.Data;
 
 namespace Singularity.Components.Views;
 
 public partial class AddToPlaylistView
 {
     private bool isActive = false;
+    private string? currentPalylistId;
 
+    private async Task AddToPlaylist()
+    {
+        if (AudioManager.CurrentSong == null || string.IsNullOrWhiteSpace(currentPalylistId))
+        {
+            OnClose();
+            return;
+        }
+
+        await PlaylistSettings.Current.AddSongToPlaylistAsync(currentPalylistId, AudioManager.CurrentSong);
+        OnClose();
+    }
+
+    private void PlaylistSelected(string id)
+    {
+        currentPalylistId = id;
+        StateHasChanged();
+    }
     private void OnClose()
     {
         isActive = false;
