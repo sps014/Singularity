@@ -3,7 +3,9 @@
 {
     foreach (var song in ResizableSongsList)
     {
-        <MusicTrack Song="song" />
+        <LongPressItem LongPressed="()=>{ TrackLongPressed(song);}">
+            <MusicTrack Song="song" CanPlay="CanPlay" CurrentSelectedSongInList="@currentSelectedId"/>
+        </LongPressItem>
     }
 }
 

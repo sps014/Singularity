@@ -3,7 +3,7 @@
 
 @if (Song is not null)
 {
-    <Glass Class="track" Blur="20" BackgroundColor="@(!IsPlaying?inactiveColor:"rgba(192, 182, 230, 0.2)")" Style="@(IsPlaying ? string.Empty : "margin-top:4px")"  Clicked="AddAndPlayAsync">
+    <Glass Class="track" Blur="20" BackgroundColor="@BackgroundColor()" Style="@(IsPlaying ? string.Empty : "margin-top:4px")"  Clicked="AddAndPlayAsync">
         <div class="control">
             <div style="width: 50px;height: 50px;" class="@(isSongLoading ? "circular-spin" : "")">
                 <img class="cover-img @(IsPlaying ? "circularMotion" : "")" style="@(isSongLoading ? "border: none;" : "")" src="@Song.ThumbnailUrl" />

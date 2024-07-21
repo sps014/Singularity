@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Singularity.Components.Views;
 using Singularity.Contracts;
 using Singularity.Data;
 using Singularity.Models;
+using YoutubeExplode.Playlists;
 
 namespace Singularity.Components.Pages;
 
@@ -11,6 +13,11 @@ public partial class UserPlaylistExpandedPage
     public string? Id { get; set; }
     private UserPlaylist? musicPlaylist;
     private IAsyncEnumerable<ISong>? songs;
+
+    private bool DeleteBtnVisible = false;
+    private bool CrossBtnVisible = false;
+
+    private SmartMusicListView? smartMusicListView;
     protected override void OnInitialized()
     {
         if (Id == null)
@@ -23,6 +30,24 @@ public partial class UserPlaylistExpandedPage
             songs = GetSongsAsync();
     }
 
+    private void OnLongPress(string songid)
+    {
+        DeleteBtnVisible = true;
+        CrossBtnVisible = true;
+        StateHasChanged();
+    }
+    private void CrossBtnClicked()
+    {
+        DeleteBtnVisible = false;
+        CrossBtnVisible = false;
+        smartMusicListView?.ResetCurrentSelectionInList();
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteButtonClicked()
+    {
+          CrossBtnClicked();
+    }
     private async IAsyncEnumerable<ISong> GetSongsAsync()
     {
         if (musicPlaylist == null)

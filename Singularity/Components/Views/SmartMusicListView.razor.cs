@@ -13,6 +13,15 @@ namespace Singularity.Components.Views;
 public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
 {
     [Parameter]
+    public bool CanPlay { get; set; } = true;
+
+    [Parameter]
+    public bool IsLongPressable { get; set; }
+
+    [Parameter]
+    public EventCallback<string>  OnLongPressed { get; set; }
+
+    [Parameter]
     public IAsyncEnumerable<ISong>? Songs { get; set; }
 
     [Parameter]
@@ -28,6 +37,8 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
 
     private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1,1);
 
+    private string? currentSelectedId;
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -35,8 +46,6 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
 
         if (Songs == null)
             return;
-
-       // await AddNextSongBatch();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -49,6 +58,23 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
         await BindGen.Window.CallVoidAsync("subscribeObserver", endElement,dotnetObjectReference!);
     }
 
+    private void TrackLongPressed(ISong song)
+    {
+        if (!IsLongPressable)
+            return;
+
+        currentSelectedId = song.Id;
+        CanPlay = false;
+        StateHasChanged();
+        OnLongPressed.InvokeAsync(song.Id);
+    }
+
+    public void ResetCurrentSelectionInList()
+    {
+        currentSelectedId = null;
+        CanPlay = true;
+        StateHasChanged();
+    }
     private async ValueTask AddNextSongBatch()
     {
         if (Songs == null)

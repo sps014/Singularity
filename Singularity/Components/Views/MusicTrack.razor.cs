@@ -12,6 +12,9 @@ namespace Singularity.Components.Views;
 
 public partial class MusicTrack:IDisposable
 {
+    [Parameter]
+    public string? CurrentSelectedSongInList { get; set; }
+
 #nullable disable
     [Inject]
     public AudioManager AudioManager { get; set; }
@@ -23,11 +26,21 @@ public partial class MusicTrack:IDisposable
     [Parameter]
     public string? SongId { get; set; }
 
+    [Parameter]
+    public bool CanPlay { get; set; } = true;
+
     private bool IsPlaying = false;
     private bool isSongLoading = false;
 
     private string inactiveColor = "background-color:rgba(117,132,147,0.4);margin-top:4px;";
 
+    private string BackgroundColor()
+    {
+        if (IsPlaying || (CurrentSelectedSongInList!=null && CurrentSelectedSongInList == Song.Id))
+            return "rgba(192, 182, 230, 0.2)";
+        else
+            return inactiveColor;
+    }
 
     protected override void OnInitialized()
     {
@@ -63,7 +76,7 @@ public partial class MusicTrack:IDisposable
 
     private async void AddAndPlayAsync()
     {
-        if (Song==null)
+        if (Song==null || !CanPlay)
         {
             return;
         }
