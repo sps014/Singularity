@@ -99,7 +99,12 @@ internal partial class PlaylistSettings : ObservableObject
         PlaylistUpdated?.Invoke(this, EventArgs.Empty);
         return SaveSettingsInDb(UserSettings.DataBaseService!);
     }
-
+    public ValueTask RemoveSongFromPlaylistAsync(string playlistName, string song)
+    {
+        Playlists[playlistName].Songs.Remove(song);
+        PlaylistUpdated?.Invoke(this, EventArgs.Empty);
+        return SaveSettingsInDb(UserSettings.DataBaseService!);
+    }
     public ValueTask RemovePlaylistAsync(string playlistName)
     {
         Playlists.Remove(playlistName);

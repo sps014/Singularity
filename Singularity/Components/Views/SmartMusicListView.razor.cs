@@ -112,4 +112,12 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
             return;
         await AddNextSongBatch();
     }
+
+    internal void RemoveSongFromList(string selectedSongId)
+    {
+        var item =ResizableSongsList.FirstOrDefault(x => x.Id == selectedSongId);
+        if(item != null)
+            ResizableSongsList.Remove(item);
+        StateHasChanged();
+    }
 }

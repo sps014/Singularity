@@ -18,6 +18,7 @@ public partial class UserPlaylistExpandedPage
     private bool CrossBtnVisible = false;
 
     private SmartMusicListView? smartMusicListView;
+    private string? selectedSongId;
     protected override void OnInitialized()
     {
         if (Id == null)
@@ -32,6 +33,7 @@ public partial class UserPlaylistExpandedPage
 
     private void OnLongPress(string songid)
     {
+        selectedSongId = songid;
         DeleteBtnVisible = true;
         CrossBtnVisible = true;
         StateHasChanged();
@@ -41,11 +43,17 @@ public partial class UserPlaylistExpandedPage
         DeleteBtnVisible = false;
         CrossBtnVisible = false;
         smartMusicListView?.ResetCurrentSelectionInList();
+        selectedSongId = null;
         StateHasChanged();
     }
 
     private async Task OnDeleteButtonClicked()
     {
+        if (selectedSongId != null && Id != null)
+        {
+            await PlaylistSettings.Current.RemoveSongFromPlaylistAsync(Id, selectedSongId);
+            smartMusicListView?.RemoveSongFromList(selectedSongId);
+        }
           CrossBtnClicked();
     }
     private async IAsyncEnumerable<ISong> GetSongsAsync()
