@@ -57,18 +57,22 @@ public class AudioManager:BindableObject
 
     public async ValueTask AddSongAsync(ISong song)
     {
-        var sameSong = QueuedSongs.FirstOrDefault(x => x.Id == song.Id);
-        if (sameSong!=null)
+        await this.Dispatcher.DispatchAsync(async() =>
         {
-            queuedSongs.Remove(sameSong);
-            queuedSongs.Insert(0, song);
-            await MediaPlayer.SeekTo(TimeSpan.Zero);
-            Logger.LogInformation($"{song.Id} -> {song.Name} already in queue");
-            return;
-        }
+            var sameSong = QueuedSongs.FirstOrDefault(x => x.Id == song.Id);
+            if (sameSong != null)
+            {
+                queuedSongs.Remove(sameSong);
+                queuedSongs.Insert(0, song);
+                await MediaPlayer.SeekTo(TimeSpan.Zero);
+                Logger.LogInformation($"{song.Id} -> {song.Name} already in queue");
+                return;
+            }
 
-        Logger.LogInformation($"{song.Id}  -> {song.Name} added in queue");
-        queuedSongs.Add(song);
+            Logger.LogInformation($"{song.Id}  -> {song.Name} added in queue");
+            queuedSongs.Add(song);
+        });
+       
     }
 
     public async ValueTask PlayPreviousSongAsync()
@@ -95,6 +99,7 @@ public class AudioManager:BindableObject
 
     public async ValueTask PlayNextSongAsync()
     {
+
         if (QueuedSongs.Count <= 0)
             return;
 
@@ -154,12 +159,16 @@ public class AudioManager:BindableObject
             MediaPlayer.Source = MediaSource.FromUri(url);
         }
 
-        SetMetaData();
-        
-        MediaPlayer.Play();
+        await this.Dispatcher.DispatchAsync(async () =>
+        {
+            SetMetaData();
 
-        if (seekToStart)
-            await MediaPlayer.SeekTo(TimeSpan.Zero);
+            MediaPlayer.Play();
+
+            if (seekToStart)
+                await MediaPlayer.SeekTo(TimeSpan.Zero);
+        });
+
 
         Logger.LogInformation($"started playing {CurrentSong.Id} -> {CurrentSong.Name}");
     }

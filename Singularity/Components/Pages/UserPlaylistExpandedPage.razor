@@ -1,0 +1,21 @@
+﻿@page "/userPlaylistExpandedPage/{Id}"
+@inject IMusicHub MusicHub
+
+
+@if (musicPlaylist != null)
+{
+
+    <TabBarContentView Title="@musicPlaylist.Name">
+
+        <div style="display:flex;margin-top:20px;flex-direction:column;align-items:center;height:250px">
+            <img src="./images/music.svg"
+                 style="border-radius:15px;width:200px;height:160px" />
+            <div style="display:flex;flex-direction:column;margin:10px;align-items:flex-start">
+                <p style="margin-top:20px;font-weight:bold;font-size:medium;">@musicPlaylist.Name</p>
+                <p style="margin-top:16px;">@musicPlaylist.Singer</p>
+            </div>
+        </div>
+
+        <SmartMusicListView Songs="Songs" />
+    </TabBarContentView>
+}

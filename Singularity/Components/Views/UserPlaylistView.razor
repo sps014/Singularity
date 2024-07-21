@@ -1,10 +1,12 @@
 ﻿@using Singularity.Data
+@inject NavigationManager Nav
+
 @if(PlaylistSettings.Current!=null)
 {
     <div>
         @foreach(var playlist in PlaylistSettings.Current.Playlists)
         {
-            <Glass Blur="20" BackgroundColor="rgba(7, 17, 27, 0.2)" Style="padding:16px 6px;">
+            <Glass Blur="20" BackgroundColor="rgba(7, 17, 27, 0.2)" Style="padding:16px 6px;" Clicked="()=>PlaylistSelected(playlist.Key)">
                 <div style="display:flex;justify-content:left">
                     <div style="width: 32px;height: 32px;">
                         <img class="cover-img" src="./images/music.svg" />

@@ -58,7 +58,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Remove="Components\Pages\UserPlaylistPage.razor" />
+      <Content Remove="Components\Pages\UserPlaylistGroupPage.razor" />
     </ItemGroup>
 
     <ItemGroup>
@@ -74,15 +74,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <UpToDateCheckInput Remove="Components\Pages\UserPlaylistPage.razor" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_ContentIncludedByDefault Remove="Components\Pages\UserPlaylistPage.razor" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Include="Components\Pages\UserPlaylistPage.razor" />
+      <None Include="Components\Pages\UserPlaylistGroupPage.razor" />
     </ItemGroup>
 
 </Project>

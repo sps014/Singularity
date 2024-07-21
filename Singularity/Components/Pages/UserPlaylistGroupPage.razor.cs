@@ -7,13 +7,14 @@ using Singularity.Components.Views;
 
 namespace Singularity.Components.Pages;
 
-public partial class UserPlaylistPage
+public partial class UserPlaylistGroupPage
 {
     private bool addPlaylistNewVisible = false;
     private CreateNewPlaylistView? NewPlaylistElement;
-    private async Task OnPlusButtonClicked()
+
+    private void OnPlusButtonClicked()
     {
-        NewPlaylistElement.SetOpen();
+        NewPlaylistElement?.SetOpen();
         StateHasChanged();
     }
 }

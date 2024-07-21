@@ -20,6 +20,7 @@ internal partial class PlaylistSettings: ObservableObject
     private static PlaylistSettings current = new PlaylistSettings();
 #pragma warning restore CS0612 // Type or member is obsolete
 
+    private static bool loadedFromDb = false;
 
     public static PlaylistSettings Current => current;
 
@@ -41,12 +42,12 @@ internal partial class PlaylistSettings: ObservableObject
         if (online == null) return;
 
         current = online;
-        UserSettings.loadedFromDb = true;
+        loadedFromDb = true;
     }
 
     public static ValueTask SaveSettingsInDb(IDatabaseService databaseService)
     {
-        if (!UserSettings.loadedFromDb)
+        if (!loadedFromDb)
             return ValueTask.CompletedTask;
 
         return databaseService.UpdateTableAsync(nameof(PlaylistSettings), current);

@@ -26,6 +26,8 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
 
     private bool isFinishedLoading = false;
 
+    private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1,1);
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -34,7 +36,7 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
         if (Songs == null)
             return;
 
-        await AddNextSongBatch();
+       // await AddNextSongBatch();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -52,6 +54,7 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
         if (Songs == null)
             return;
 
+        await semaphoreSlim.WaitAsync();
         int start = ResizableSongsList.Count;
         int end = ResizableSongsList.Count+ViewItemCount;
 
@@ -66,6 +69,7 @@ public partial class SmartMusicListView : ComponentBase, IAsyncDisposable
             ResizableSongsList.Add(song);
         }
         isFinishedLoading = ct == 0 || ct!=ViewItemCount;
+        semaphoreSlim.Release();
         StateHasChanged();
     }
 
