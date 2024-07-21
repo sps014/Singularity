@@ -3,11 +3,16 @@
 <ScollableModalView IsActive="isActive"
     OnCloseButtonClick="OnClose">
     <div style="margin-top:60px;padding:10px">
+        <button value="submit" class="btn" @onclick="NewAddToPlaylistButtonClicked"
+            style="width:150px;color:white;background-color:deeppink;margin:10px 0px;margin-right:10px">
+            Create New
+        </button>
         @if (currentPalylistId != null)
         {
-            <button value="submit" class="btn" style="width:150px;color:white;background-color:orange;margin-top:10px"
+            
+            <button value="submit" class="btn" style="width:150px;color:white;background-color:orange;margin:10px 0px"
                     @onclick="AddToPlaylist">
-                Add To Playlist
+                Add To Selected
             </button>
         }
         
@@ -15,6 +20,7 @@
     </div>
 </ScollableModalView>
 
+<CreateNewPlaylistView @ref="newPlaylistElement" PlaylistCreated="OnNewPlaylistCreated" />
 <style>
     .btn {
         margin: 0 12px;

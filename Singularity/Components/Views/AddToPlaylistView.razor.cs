@@ -12,7 +12,12 @@ public partial class AddToPlaylistView
 {
     private bool isActive = false;
     private string? currentPalylistId;
+    CreateNewPlaylistView? newPlaylistElement;
 
+    private void NewAddToPlaylistButtonClicked()
+    {
+        newPlaylistElement?.SetOpen();
+    }
     private async Task AddToPlaylist()
     {
         if (AudioManager.CurrentSong == null || string.IsNullOrWhiteSpace(currentPalylistId))
@@ -25,6 +30,11 @@ public partial class AddToPlaylistView
         OnClose();
     }
 
+    private Task OnNewPlaylistCreated(string id)
+    {
+        currentPalylistId = id;
+        return AddToPlaylist();
+    }
     private void PlaylistSelected(string id)
     {
         currentPalylistId = id;

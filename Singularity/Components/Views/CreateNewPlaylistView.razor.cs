@@ -15,6 +15,9 @@ public partial class CreateNewPlaylistView
     [Parameter]
     public bool IsVisible { get; set; }
 
+    [Parameter]
+    public EventCallback<string> PlaylistCreated { get; set; }
+
     public void SetOpen()
     {
         IsVisible = true;
@@ -30,14 +33,18 @@ public partial class CreateNewPlaylistView
         if (string.IsNullOrWhiteSpace(playlistName))
             return;
 
+
         if(PlaylistSettings.Current.IsPlaylistExist(playlistName))
         {
             IsVisible = false;
             StateHasChanged();
+            await PlaylistCreated.InvokeAsync(playlistName);
             return;
         }
         await PlaylistSettings.Current.CreateNewPlaylistAsync(playlistName);
         IsVisible = false;
         StateHasChanged();
+        await PlaylistCreated.InvokeAsync(playlistName);
+
     }
 }

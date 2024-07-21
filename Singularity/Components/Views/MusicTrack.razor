@@ -15,12 +15,13 @@
                     <span style="margin:3px;font-weight:bold">@Song.Duration.GetValueOrDefault().ToMusicString()</span>
                 </div>
             </div>
-            <div class="music-bar" style="width:10%">
-                @if (IsPlaying)
-                {
+            @if (IsPlaying)
+            {
+                <div class="music-bar" style="width:60px">
                     <MusicBar></MusicBar>
-                }
-            </div>
+                </div>
+            }
+            
         </div>
     </Glass>
 }
