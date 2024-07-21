@@ -34,7 +34,16 @@ public partial class TabBarContentView : IDisposable
     public bool ShowAddButton { get; set; } = false;
 
     [Parameter]
+    public bool ShowDeleteButton { get; set; } = false;
+    [Parameter]
+    public bool ShowCrossButton { get; set; } = false;
+    [Parameter]
+    public EventCallback CrossButtonClicked { get; set; }
+    [Parameter]
     public EventCallback AddButtonClicked { get; set; }
+
+    [Parameter]
+    public EventCallback DeleteButtonClicked { get; set; }
 
 
     private bool IsSearchPage => Nav.Uri.EndsWith("search");

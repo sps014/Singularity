@@ -1,7 +1,16 @@
 ﻿@page "/playlist"
 @inject IMusicHub MusicHub
-<TabBarContentView Title="Your Playlists" ShowAddButton="true" AddButtonClicked="OnPlusButtonClicked" Padding="0">
-    <CreateNewPlaylistView @ref="NewPlaylistElement" />
-    <UserPlaylistView />
-</TabBarContentView>
+<TabBarContentView Title="Your Playlists" 
+    ShowAddButton="AddBtnVisible"
+    ShowCrossButton="CrossBtnVisible" ShowDeleteButton="DeleteBtnVisible"
+    CrossButtonClicked="CrossBtnClicked"
+    DeleteButtonClicked="OnDeleteButtonClicked"
+    AddButtonClicked="OnPlusButtonClicked" Padding="0">
+   
+    <CreateNewPlaylistView
+        @ref="newPlaylistElement" />
+    <UserPlaylistView @ref="PlaylistView"
+        OnPlaylistSelected="PlaylistItemSelected"/>
 
+
+</TabBarContentView>

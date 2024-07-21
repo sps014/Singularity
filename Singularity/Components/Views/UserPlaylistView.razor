@@ -1,15 +1,14 @@
 ﻿@using Singularity.Data
 @inject NavigationManager Nav
 
-@if(PlaylistSettings.Current!=null)
-{
-    <div>
-        @foreach(var playlist in PlaylistSettings.Current.Playlists)
-        {
-            <Glass Blur="20" BackgroundColor="rgba(7, 17, 27, 0.2)" Style="padding:16px 6px;" Clicked="()=>PlaylistSelected(playlist.Key)">
+<div>
+    @foreach (var playlist in PlaylistSettings.Current.Playlists)
+    {
+        <LongPressItem LongPressed="()=>OnLongPressed(playlist.Value)">
+            <Glass Blur="20" BackgroundColor="@GetStyle(playlist.Value)" Style="padding:16px 6px;" Clicked="() => PlaylistSelected(playlist.Key)">
                 <div style="display:flex;justify-content:left">
                     <div style="width: 32px;height: 32px;">
-                        <img class="cover-img" src="./images/music.svg" />
+                        <img class="cover-img" src="./images/music.svg"/>
                     </div>
                     <div class="detail" style="">
                         <p style="font-weight:bold" class="ellepsis">@playlist.Value.Name</p>
@@ -19,9 +18,9 @@
                     </div>
                 </div>
             </Glass>
-        }
-    </div>
-}
+        </LongPressItem>
+    }
+</div>
 <style>
     .detail {
         display: flex;

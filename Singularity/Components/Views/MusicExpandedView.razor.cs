@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CommunityToolkit.Maui.Core.Primitives;
+﻿using CommunityToolkit.Maui.Core.Primitives;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Singularity.Data;
@@ -20,7 +15,7 @@ public partial class MusicExpandedView: IDisposable
 
     [Parameter]
     public EventCallback OnToggled { get; set; }
-    private DateTime _lastUpdateTime = DateTime.MinValue;
+    private DateTime lastUpdateTime = DateTime.MinValue;
 
     protected override void OnInitialized()
     {
@@ -30,11 +25,11 @@ public partial class MusicExpandedView: IDisposable
     }
     private async void MediaPlayerPositionChanged(object? sender, MediaPositionChangedEventArgs e)
     {
-        if((DateTime.Now-_lastUpdateTime).TotalMilliseconds<1000)
+        if((DateTime.Now-lastUpdateTime).TotalMilliseconds<1000)
         {
             return;
         }
-        _lastUpdateTime = DateTime.Now;
+        lastUpdateTime = DateTime.Now;
 
         await InvokeAsync(() =>
         {
@@ -97,6 +92,9 @@ public partial class MusicExpandedView: IDisposable
 
     private void OnInputRangeSlider(ChangeEventArgs e)
     {
+        if(e.Value==null)
+            return;
+        
         AudioManager.MediaPlayer.SeekTo(TimeSpan.FromSeconds(double.Parse(e.Value.ToString()!)));
     }
 

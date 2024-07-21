@@ -16,9 +16,7 @@ public class FirestoreDbService : IDatabaseService
     private Lazy<Task<JObjPtr>> FirestoreJSReference { get; }
     public IAuthenticatonService AuthService { get; }
     public ILogger<FirestoreDbService> Logger { get; }
-
-    private static bool _firstInstance = true;
-
+    
     public FirestoreDbService(IJSRuntime runtime,IAuthenticatonService authService,ILogger<FirestoreDbService> logger)
     {
         AuthService = authService;

@@ -8,16 +8,31 @@
         {
             <div style="display:flex;align-items:center">
                 <img src="./images/icon.svg" width="40" height="40" />
-                <div class="title">@Title.ToUpper()</div>
+                <div class="title">@Title?.ToUpper()</div>
             </div>
-            @if (ShowSearchButton)
-            {
-                <img src="./images/search.svg" width="28" height="28" @onclick="GoToSearch" />
-            }
-            @if (ShowAddButton)
-            {
-                <img src="./images/plus.svg" width="28" height="28" @onclick="()=>AddButtonClicked.InvokeAsync()" />
-            }
+            <div style="display:flex;align-items:center">
+                @if (ShowSearchButton)
+                {
+                    <img src="./images/search.svg" style="margin-left:8px"
+                        width="28" height="28" @onclick="GoToSearch" />
+                }
+                @if (ShowAddButton)
+                {
+                    <img src="./images/plus.svg" style="margin-left:8px"
+                        width="28" height="28" @onclick="()=>AddButtonClicked.InvokeAsync()" />
+                }
+                @if (ShowDeleteButton)
+                {
+                    <img src="./images/delete.svg" style="margin-left:8px"
+                        width="28" height="28" @onclick="()=>DeleteButtonClicked.InvokeAsync()" />
+                }
+                @if (ShowCrossButton)
+                {
+                    <img src="./images/cross.svg" style="margin-left:8px"
+                        width="28" height="28" @onclick="()=>CrossButtonClicked.InvokeAsync()" />
+                }
+            </div>
+           
         }
         else
         {

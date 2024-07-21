@@ -14,20 +14,18 @@ using Singularity.Models;
 namespace Singularity.Services;
 
 
-public class AudioManager:BindableObject
+public class AudioManager(ILogger<AudioManager> logger) : BindableObject
 {
-    private static MediaElement? MediaElement;
-    private List<ISong> queuedSongs { get; } = new List<ISong>();
+    private static MediaElement? _mediaElement;
+    private List<ISong> QueuedSongs { get; } = [];
     private bool playAtleastOnce = false;
 
-
-    public IReadOnlyList<ISong> QueuedSongs => queuedSongs;
-
+    
     public ISong? CurrentSong => QueuedSongs.FirstOrDefault();
 
-    public MediaElement MediaPlayer =>MediaElement!;
+    public MediaElement MediaPlayer =>_mediaElement!;
 
-    public ILogger<AudioManager> Logger { get; }
+    public ILogger<AudioManager> Logger { get; } = logger;
 
     public float MediaPositionPercent
     {
@@ -39,11 +37,6 @@ public class AudioManager:BindableObject
         }
     }
 
-
-    public AudioManager(ILogger<AudioManager> logger)
-    {
-        Logger = logger;
-    }
 
     private void SetMetaData()
     {
@@ -62,15 +55,15 @@ public class AudioManager:BindableObject
             var sameSong = QueuedSongs.FirstOrDefault(x => x.Id == song.Id);
             if (sameSong != null)
             {
-                queuedSongs.Remove(sameSong);
-                queuedSongs.Insert(0, song);
+                QueuedSongs.Remove(sameSong);
+                QueuedSongs.Insert(0, song);
                 await MediaPlayer.SeekTo(TimeSpan.Zero);
                 Logger.LogInformation($"{song.Id} -> {song.Name} already in queue");
                 return;
             }
 
             Logger.LogInformation($"{song.Id}  -> {song.Name} added in queue");
-            queuedSongs.Add(song);
+            QueuedSongs.Add(song);
         });
        
     }
@@ -91,7 +84,7 @@ public class AudioManager:BindableObject
 
         //remove last song and bring it front and play
         var last = QueuedSongs.Last();
-        queuedSongs.Remove(last);
+        QueuedSongs.Remove(last);
         await AddSongAsync(last);
 
         await PlayAsync(true);
@@ -105,8 +98,8 @@ public class AudioManager:BindableObject
 
         //move current song to end
         var first = CurrentSong!;
-        queuedSongs.Remove(CurrentSong!);
-        queuedSongs.Add(first);
+        QueuedSongs.Remove(CurrentSong!);
+        QueuedSongs.Add(first);
 
         await PlayAsync(seekToStart:true);
 
@@ -115,25 +108,25 @@ public class AudioManager:BindableObject
     public async ValueTask PlayNowAsync(ISong song)
     {
         Pause();
-        var existingItem = queuedSongs.FirstOrDefault(x=>x.Id==song.Id);
-        var first = queuedSongs.FirstOrDefault()!;
+        var existingItem = QueuedSongs.FirstOrDefault(x=>x.Id==song.Id);
+        var first = QueuedSongs.FirstOrDefault();
 
         if(first != null)
         {
-            queuedSongs.Remove(first);
-            queuedSongs.Add(first);
+            QueuedSongs.Remove(first);
+            QueuedSongs.Add(first);
         }
 
         if(existingItem == null)
         {
-            queuedSongs.Insert(0, song);
+            QueuedSongs.Insert(0, song);
             await PlayAsync(true);
             return;
         }
 
         //move current song to end
-        queuedSongs.Remove(existingItem);
-        queuedSongs.Insert(0,existingItem);
+        QueuedSongs.Remove(existingItem);
+        QueuedSongs.Insert(0,existingItem);
 
         await PlayAsync(seekToStart: true);
 
@@ -154,7 +147,9 @@ public class AudioManager:BindableObject
         if(url==null)
             return;
 
-        if (MediaPlayer.Source==null || (MediaPlayer.Source is UriMediaSource source && source.Uri.ToString()!=url))
+        if (MediaPlayer.Source==null ||
+            (MediaPlayer.Source is UriMediaSource source 
+             && source.Uri!=null && source.Uri.ToString()!=url))
         {
             MediaPlayer.Source = MediaSource.FromUri(url);
         }
@@ -175,7 +170,7 @@ public class AudioManager:BindableObject
 
     internal static void InitMediaElement(MediaElement mediaElement)
     {
-        MediaElement = mediaElement;
+        _mediaElement = mediaElement;
     }
     internal void SetupEvents()
     {

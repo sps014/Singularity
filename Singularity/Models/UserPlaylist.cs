@@ -13,8 +13,8 @@ public class UserPlaylist : IMusicPlaylist
     public required string Id { get; set; }
     public required string Name { get; set; }
     public required string Singer { get; set; }
-    public string? Description { get; set; }
-    public string? ThumbnailUrl { get; set; }
+    public required string Description { get; set; }
+    public required string ThumbnailUrl { get; set; }
     public PlaylistType Type { get; set; } = PlaylistType.UserMade;
 
     public List<string> Songs { get; set; } = new List<string>();

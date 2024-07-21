@@ -10,11 +10,9 @@ using Singularity.Models;
 
 namespace Singularity.Data;
 
-internal partial class PlaylistSettings: ObservableObject
+internal partial class PlaylistSettings : ObservableObject
 {
-
-    [ObservableProperty]
-    Dictionary<string,UserPlaylist> playlists = new Dictionary<string,UserPlaylist>();
+    [ObservableProperty] Dictionary<string, UserPlaylist> playlists = new Dictionary<string, UserPlaylist>();
 
 #pragma warning disable CS0612 // Type or member is obsolete
     private static PlaylistSettings current = new PlaylistSettings();
@@ -27,7 +25,6 @@ internal partial class PlaylistSettings: ObservableObject
     [Obsolete]
     public PlaylistSettings()
     {
-
     }
 
     public static async ValueTask LoadSettingsFromDb(IDatabaseService databaseService)
@@ -69,7 +66,7 @@ internal partial class PlaylistSettings: ObservableObject
 
     public ValueTask CreateNewPlaylistAsync(string playlistName)
     {
-        if(IsPlaylistExist(playlistName))
+        if (IsPlaylistExist(playlistName))
             return ValueTask.CompletedTask;
 
         Playlists[playlistName] = new UserPlaylist()
@@ -77,12 +74,15 @@ internal partial class PlaylistSettings: ObservableObject
             Id = playlistName,
             Name = playlistName,
             Singer = string.Empty,
+            Description = string.Empty,
+            ThumbnailUrl = string.Empty
         };
 
         PlaylistUpdated?.Invoke(this, EventArgs.Empty);
 
         return SaveSettingsInDb(UserSettings.DataBaseService!);
     }
+
     public ValueTask AddSongToPlaylistAsync(string playlistName, ISong song)
     {
         if (Playlists[playlistName].Songs.Contains(song.Id))
@@ -92,12 +92,14 @@ internal partial class PlaylistSettings: ObservableObject
         PlaylistUpdated?.Invoke(this, EventArgs.Empty);
         return SaveSettingsInDb(UserSettings.DataBaseService!);
     }
+
     public ValueTask RemoveSongFromPlaylistAsync(string playlistName, ISong song)
     {
         Playlists[playlistName].Songs.Remove(song.Id);
         PlaylistUpdated?.Invoke(this, EventArgs.Empty);
         return SaveSettingsInDb(UserSettings.DataBaseService!);
     }
+
     public ValueTask RemovePlaylistAsync(string playlistName)
     {
         Playlists.Remove(playlistName);
@@ -105,5 +107,5 @@ internal partial class PlaylistSettings: ObservableObject
         return SaveSettingsInDb(UserSettings.DataBaseService!);
     }
 
-    public event EventHandler PlaylistUpdated;
+    public event EventHandler? PlaylistUpdated;
 }
