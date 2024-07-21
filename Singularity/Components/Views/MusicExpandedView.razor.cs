@@ -55,6 +55,33 @@ public partial class MusicExpandedView: IDisposable
         });
     }
 
+    private string GetLoopImage()
+    {
+        if (UserSettings.Current.LoopMode == Models.LoopMode.All)
+            return "./images/repeat_all.png";
+        else if (UserSettings.Current.LoopMode == Models.LoopMode.Same)
+            return "./images/repeat_same.png";
+        else
+            return "./images/repeat_none.png";
+    }
+
+    private void ChangeLoopMode()
+    {
+        switch(UserSettings.Current.LoopMode)
+        {
+            case Models.LoopMode.All:
+                UserSettings.Current.LoopMode = Models.LoopMode.Same;
+                break;
+            case Models.LoopMode.Same:
+                UserSettings.Current.LoopMode = Models.LoopMode.None;
+                break;
+            case Models.LoopMode.None:
+                UserSettings.Current.LoopMode = Models.LoopMode.All;
+                break;
+        }
+        StateHasChanged();
+    }
+
     //On back button
     private void OnBeforeInternalNavigation(LocationChangingContext context)
     {

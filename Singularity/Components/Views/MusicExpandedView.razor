@@ -63,7 +63,7 @@
                     </button>
 
                     <img src="./images/forward.svg" height="32" width="32" @onclick="async()=>await AudioManager.PlayNextSongAsync()" />
-                    <img src="./images/repeat_all.svg" height="32" width="32" />
+                    <img src="@GetLoopImage()" height="32" width="32" @onclick="ChangeLoopMode" />
 
 
                 </div>
