@@ -44,7 +44,7 @@
                            ValueChanged="(d)=>OnSliderChange(d)" />
                 </div>
                 <div style="display:flex;justify-content:space-between;margin:30px;align-items:center">
-                    <img src="./images/add-to-playlist.svg" height="32" width="32" />
+                    <img src="./images/add-to-playlist.svg" height="32" width="32" @onclick="ShowAddToPlaylist" />
                     <img src="./images/backward.svg" height="32" width="32" @onclick="async()=>await AudioManager.PlayPreviousSongAsync()" />
                     <button style="width:48px;height:48px;border-radius:28px;background:none;border-color:pink" @onclick="HandlePlayPause">
                         @if (AudioManager.MediaPlayer.CurrentState == MediaElementState.Playing)
@@ -71,6 +71,8 @@
 
         </div>
     </div>
+
+    <AddToPlaylistView @ref="addToPlaylistView"/>
 }
 
 <style>

@@ -12,6 +12,9 @@ namespace Singularity.Components.Views;
 public partial class UserPlaylistView : IDisposable
 {
     [Parameter]
+    public bool IsInAddMode { get; set; } = false;
+
+    [Parameter]
     public EventCallback<string> OnPlaylistSelected { get; set; }
     private string? playlistId;
     protected override void OnInitialized()
@@ -33,8 +36,9 @@ public partial class UserPlaylistView : IDisposable
 
     private void PlaylistSelected(string id)
     {
-        if (playlistId != null)
+        if (id == null || IsInAddMode)
             return;
+
         Nav.NavigateTo("/userPlaylistExpandedPage/" + id);
     }
     public void ResetPlaylistSelected()
@@ -45,6 +49,9 @@ public partial class UserPlaylistView : IDisposable
 
     private void OnLongPressed(UserPlaylist playlist)
     {
+        if (IsInAddMode)
+            return;
+
         playlistId = playlist.Id;
         OnPlaylistSelected.InvokeAsync(playlist.Id);
         StateHasChanged();

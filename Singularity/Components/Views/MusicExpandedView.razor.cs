@@ -16,6 +16,8 @@ public partial class MusicExpandedView: IDisposable
     [Parameter]
     public EventCallback OnToggled { get; set; }
     private DateTime lastUpdateTime = DateTime.MinValue;
+    private AddToPlaylistView? addToPlaylistView;
+
 
     protected override void OnInitialized()
     {
@@ -36,6 +38,11 @@ public partial class MusicExpandedView: IDisposable
             StateHasChanged();
 
         });
+    }
+
+    private void ShowAddToPlaylist()
+    {
+        addToPlaylistView?.Show();
     }
 
     private async void MediaPlayerStateChanged(object? sender, MediaStateChangedEventArgs e)

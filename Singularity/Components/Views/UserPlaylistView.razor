@@ -8,9 +8,9 @@
             <Glass Blur="20" BackgroundColor="@GetStyle(playlist.Value)" Style="padding:16px 6px;" Clicked="() => PlaylistSelected(playlist.Key)">
                 <div style="display:flex;justify-content:left">
                     <div style="width: 32px;height: 32px;">
-                        <img class="cover-img" src="./images/music.svg"/>
+                        <img class="cover-img-list" src="./images/music.svg"/>
                     </div>
-                    <div class="detail" style="">
+                    <div class="detail-list" style="">
                         <p style="font-weight:bold" class="ellepsis">@playlist.Value.Name</p>
                         <div class="ellepsis" style="display:flex;justify-content:space-between">
                             <span style="margin:3px;font-weight:bold">@playlist.Value.Singer</span>
@@ -22,7 +22,7 @@
     }
 </div>
 <style>
-    .detail {
+    .detail-list {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -31,7 +31,7 @@
         align-items: start;
     }
 
-    .cover-img {
+    .cover-img-list {
         border-radius: 50%;
         display: flex;
         align-items: center;
