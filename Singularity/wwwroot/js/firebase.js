@@ -11,13 +11,13 @@ import {
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBng5YuwbN9of_gVycZyAx9tpx3ItO_LpU",
-    authDomain: "singularity-music-app.firebaseapp.com",
-    projectId: "singularity-music-app",
-    storageBucket: "singularity-music-app.appspot.com",
-    messagingSenderId: "634757845361",
-    appId: "1:634757845361:web:0258477b89f3c0f40de6d0",
-    measurementId: "G-6JRPZPZ4L6"
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: "",
+    measurementId: ""
 };
 
 // Initialize Firebase
