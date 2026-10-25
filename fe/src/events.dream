@@ -1,0 +1,307 @@
+module singularity;
+
+import common;
+import state;
+import dom;
+import views;
+import player_view;
+import playback;
+import storage;
+import system;
+
+let editor_mode = "create";
+let editor_track = "";
+
+internal fun set_player_open(open: bool): void {
+    let document = js.global.document;
+    let width: int = js.global.innerWidth;
+    document.body.classList.toggle("player-expanded", open);
+    document.body.classList.toggle("queue-open", open);
+    let modal = open && width <= 980;
+    if modal {
+        el("now-panel").setAttribute("role", "dialog");
+        el("now-panel").setAttribute("aria-modal", "true");
+    } else {
+        el("now-panel").removeAttribute("role");
+        el("now-panel").removeAttribute("aria-modal");
+    }
+    for (let selector in [".workspace", ".sidebar", ".player-bar", "#mobile-nav"]) {
+        document.querySelector(selector).inert = modal;
+    }
+    if open {
+        el("now-panel").setAttribute("tabindex", "-1");
+        el("now-panel").focus();
+    } else {
+        document.querySelector("[data-action='expand-player']").focus();
+    }
+}
+
+internal fun open_editor(mode: string, track: string): void {
+    editor_mode = mode;
+    editor_track = track;
+    let adding = mode == "add";
+    el("editor-title")
+        .textContent = adding
+        ? "Add to a playlist" : (mode == "rename" ? "Rename playlist" : "A new little universe");
+    el("playlist-name").hidden = adding;
+    el("playlist-name").required = !adding;
+    js.global.document.querySelector("label[for='playlist-name']").hidden = adding;
+    el("editor-submit").hidden = adding;
+    el("editor-submit").textContent = mode == "rename" ? "Save name" : "Create playlist";
+    el("playlist-name").value = "";
+    if mode == "rename" {
+        el("playlist-name").value = state().library.find_playlist(state().view).unwrap().name;
+    }
+    let picker = el("playlist-picker");
+    picker.replaceChildren();
+    if adding {
+        for (let playlist in state().library.playlists) {
+            let has = playlist.tracks.contains(track);
+            let item = button(
+                "pick-playlist",
+                playlist.name,
+                has ? "heart" : "plus",
+                "playlist-choice"
+            );
+            item.setAttribute("data-id", playlist.id);
+            item.appendChild(node("span", "", playlist.name + (has ? " · Already added" : "")));
+            item.disabled = has;
+            picker.appendChild(item);
+        }
+        if state().library.playlists.length == 0 {
+            picker.appendChild(
+                node("p", "subtitle", "Create a playlist first, then add your songs.")
+            );
+        }
+        let create = button("create", "Create playlist", "plus", "soft-button");
+        create.appendChild(node("span", "", "New playlist"));
+        picker.appendChild(create);
+    }
+    if !el("editor").open.to_bool() {
+        el("editor").showModal();
+    }
+    if !adding {
+        el("playlist-name").focus();
+    }
+}
+
+internal fun on_submit(event: js): void {
+    event.preventDefault();
+    let name: string = el("playlist-name").value;
+    if name.trim() == "" {
+        el("playlist-name").focus();
+        return;
+    }
+    if editor_mode == "rename" {
+        state().library.rename_playlist(state().view, name);
+    } else {
+        let playlist = state().library.create_playlist(name);
+        if playlist.is_some() {
+            state().view = playlist.unwrap().id;
+            if editor_track != "" {
+                playlist.unwrap().add(editor_track);
+            }
+        }
+    }
+    state().query = "";
+    el("search").value = "";
+    el("editor").close();
+    persist_library();
+    render_view();
+}
+
+internal fun on_click(event: js): void {
+    let target = event.target.closest("[data-action]");
+    if target.is_null() {
+        return;
+    }
+    let action: string = target.getAttribute("data-action");
+    let raw_id = target.getAttribute("data-id");
+    let id = raw_id.is_null() ? "" : raw_id.to_str();
+    let app = state();
+    switch (action) {
+        "nav" => {
+            event.preventDefault();
+            app.view = id;
+            app.query = "";
+            el("search").value = "";
+            render_view();
+            el("content").scrollTop = 0;
+            if id == "search" {
+                el("search").focus();
+            }
+        }
+        "mood" => {
+            app.mood = id;
+            render_view();
+        }
+        "track" => play_collection(id),
+        "play-all" => play_collection(""),
+        "play" => Promise.start(toggle_playback()),
+        "retry" => Promise.start(start_selected()),
+        "next" => next_track(1, false),
+        "prev" => next_track(-1, false),
+        "like" => {
+            app.library.toggle_like(id);
+            persist_library();
+            render_view();
+            render_player();
+        }
+        "like-current" => {
+            app.library.toggle_like(app.selected);
+            persist_library();
+            render_view();
+            render_player();
+        }
+        "shuffle" => {
+            app.queue.toggle_shuffle();
+            render_queue();
+        }
+        "repeat" => {
+            app.queue.repeat_mode = (app.queue.repeat_mode + 1) % 3;
+        },
+        "mute" => {
+            app.audio.muted = !app.audio.muted;
+        },
+        "queue-track" => {
+            let index: int = js.global.Number(id);
+            if index >= 0 && index < app.queue.tracks.length {
+                app.queue.index = index;
+                app.selected = app.queue.tracks[index];
+                Promise.start(start_selected());
+            }
+        }
+        "create" => open_editor("create", el("editor").open.to_bool() ? editor_track : ""),
+        "rename" => open_editor("rename", ""),
+        "delete" => {
+            let accepted: bool = js.global.confirm(
+                "Delete this playlist? Your songs and likes will stay in your library."
+            );
+            if accepted {
+                app.library.delete_playlist(app.view);
+                app.view = "library";
+                persist_library();
+                render_view();
+            }
+        }
+        "add" => open_editor("add", id),
+        "pick-playlist" => {
+            let playlist = app.library.find_playlist(id);
+            if playlist.is_some() {
+                playlist.unwrap().add(editor_track);
+                app.notice = "Added to " + playlist.unwrap().name + ".";
+                persist_library();
+                render_view();
+            }
+            el("editor").close();
+            editor_track = "";
+        }
+        "remove" => {
+            app.library.find_playlist(app.view).unwrap().remove(id);
+            persist_library();
+            render_view();
+        }
+        "close-dialog" => {
+            el("editor").close();
+            editor_track = "";
+        }
+        "expand-player" => set_player_open(true),
+        "close-player" => set_player_open(false),
+        "toggle-queue" => {
+            let width: int = js.global.innerWidth;
+            if width > 980 {
+                let collapsed: bool = el("now-panel").classList.toggle("queue-collapsed");
+                el("queue-toggle").setAttribute("aria-pressed", collapsed ? "false" : "true");
+            } else {
+                set_player_open(
+                    !js.global.document.body.classList.contains("queue-open").to_bool()
+                );
+            }
+        },
+        "dismiss" => {
+            app.notice = "";
+        },
+        _ => {}
+    }
+    refresh_player();
+}
+
+internal fun on_input(event: js): void {
+    let id: string = event.target.id;
+    let app = state();
+    if id == "search" {
+        app.query = event.target.value;
+        if app.view != "search" {
+            app.view = "search";
+        }
+        render_view();
+    } else if id == "volume" || id == "panel-volume" {
+        let volume: double = js.global.Number(event.target.value);
+        app.audio.volume = (float)(volume / 100.0d);
+        app.audio.muted = false;
+        el("volume").value = volume;
+    } else if id == "panel-seek" || id == "bar-seek" {
+        app.scrubbing = id;
+        let value: double = js.global.Number(event.target.value);
+        event.target.style.setProperty("--fill", (value / 10.0d).to_string() + "%");
+    }
+}
+
+internal fun on_change(event: js): void {
+    let id: string = event.target.id;
+    let app = state();
+    app.scrubbing = "";
+    if (id == "panel-seek" || id == "bar-seek")
+        && !app.audio.seeking && app.audio.duration.is_some() {
+        let value: double = js.global.Number(event.target.value);
+        app.audio.current_time = app.audio.duration.unwrap() * value / 1000.0d;
+    }
+}
+
+internal fun on_key(event: js): void {
+    let tag: string = event.target.tagName;
+    let key: string = event.key;
+    if key == "Escape" && js.global.document.body.classList.contains("player-expanded").to_bool() {
+        set_player_open(false);
+    }
+    let modal: bool = js.global.document.querySelector(".workspace").inert;
+    if modal && key == "Tab" {
+        let controls = el("now-panel").querySelectorAll("button, input:not(:disabled)");
+        let count: int = controls.length;
+        let active = js.global.document.activeElement;
+        let backwards: bool = event.shiftKey;
+        if backwards
+            && (
+                active.isSameNode(controls[0])
+                    .to_bool() || active.isSameNode(el("now-panel"))
+                    .to_bool()
+            ) {
+            event.preventDefault();
+            controls[count - 1].focus();
+        } else if !backwards && active.isSameNode(controls[count - 1]).to_bool() {
+            event.preventDefault();
+            controls[0].focus();
+        }
+    }
+    if tag
+        == "INPUT"
+        || tag == "TEXTAREA" || tag == "SELECT" || event.target.isContentEditable.to_bool() {
+        return;
+    }
+    if key == "/" {
+        event.preventDefault();
+        el("search").focus();
+    } else if key == " " && tag != "BUTTON" && !el("editor").open.to_bool() {
+        event.preventDefault();
+        Promise.start(toggle_playback());
+    }
+}
+
+internal fun on_unload(event: js): void {
+    if event.persisted.to_bool() {
+        state().audio.pause();
+        return;
+    }
+    state().alive = false;
+    state().audio.close();
+}

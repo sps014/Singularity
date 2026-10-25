@@ -1,0 +1,156 @@
+:root {
+  color-scheme: dark;
+  --bg: #100f17;
+  --text: #f3eff7;
+  --muted: #9b93a8;
+  --faint: #756b85;
+  --accent: #ddbbfa;
+  --pink: #eaaec7;
+  --line: rgba(238, 220, 255, .085);
+  --panel: rgba(41, 32, 54, .42);
+  --radius: 22px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button, input {
+  font: inherit;
+}
+
+button, a, input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  color: inherit;
+  cursor: pointer;
+}
+
+button {
+  border: 0;
+  background: none;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: .38;
+}
+
+button, a {
+  touch-action: manipulation;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+img {
+  display: block;
+  object-fit: cover;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+
+button:hover {
+  color: white;
+}
+
+button, a, input {
+  transition: background .18s, color .18s, opacity .18s, transform .18s;
+}
+
+input[type='range'] {
+  --fill: 0%;
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  height: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: linear-gradient(to right, var(--accent) var(--fill), #ffffff20 var(--fill));
+}
+
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f4e5ff;
+  box-shadow: 0 0 9px #d8b0ff60;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: #f4e5ff;
+}
+
+input[type='range']:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+::selection {
+  background: #b283bd66;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ac91c126;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}

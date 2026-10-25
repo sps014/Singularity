@@ -1,0 +1,64 @@
+import system;
+import system.collections;
+import models;
+
+public class Library {
+    public liked: List<string>;
+    public playlists: List<Playlist>;
+    public next_id: int;
+
+    public constructor() {
+        this.liked = List<string>();
+        this.playlists = List<Playlist>();
+        this.next_id = 1;
+    }
+
+    public fun toggle_like(track_id: string): bool {
+        if this.liked.remove(track_id) {
+            return false;
+        }
+        this.liked.push(track_id);
+        return true;
+    }
+
+    public fun create_playlist(name: string): Option<Playlist> {
+        let cleaned = name.trim();
+        if cleaned == "" {
+            return Option.None;
+        }
+        while this.find_playlist("playlist-" + this.next_id.to_string()).is_some() {
+            this.next_id = this.next_id + 1;
+        }
+        let playlist = Playlist("playlist-" + this.next_id.to_string(), cleaned);
+        this.next_id = this.next_id + 1;
+        this.playlists.push(playlist);
+        return Option.Some(playlist);
+    }
+
+    public fun find_playlist(id: string): Option<Playlist> {
+        for (let playlist in this.playlists) {
+            if playlist.id == id {
+                return Option.Some(playlist);
+            }
+        }
+        return Option.None;
+    }
+
+    public fun rename_playlist(id: string, name: string): bool {
+        let playlist = this.find_playlist(id);
+        if playlist.is_none() || name.trim() == "" {
+            return false;
+        }
+        playlist.unwrap().name = name.trim();
+        return true;
+    }
+
+    public fun delete_playlist(id: string): bool {
+        for (let i = 0; i < this.playlists.length; i = i + 1) {
+            if this.playlists[i].id == id {
+                return this.playlists.remove_at(i);
+            }
+        }
+        return false;
+    }
+}

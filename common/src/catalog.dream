@@ -1,0 +1,79 @@
+import system;
+import system.collections;
+import models;
+
+public fun demo_catalog(): Track[] {
+    return [
+        Track(
+            "1",
+            "Outfoxing the Fox",
+            "Kevin MacLeod",
+            "Web Audio samples",
+            "https://mdn.github.io/webaudio-examples/audio-basics/outfoxing.mp3",
+            "bloom",
+            "Dreamy"
+        ),
+        Track(
+            "2",
+            "Viper",
+            "Unknown artist",
+            "Web Audio samples",
+            "https://mdn.github.io/webaudio-examples/audio-analyser/viper.mp3",
+            "orbit",
+            "After hours"
+        ),
+        Track(
+            "3",
+            "R&B Lo-fi Melody",
+            "Unknown artist",
+            "Web Audio samples",
+            "https://mdn.github.io/webaudio-examples/audio-buffer-source-node/loop/rnb-lofi-melody-loop.wav",
+            "dunes",
+            "Slow living"
+        ),
+        Track(
+            "4",
+            "Bass Guitar",
+            "Unknown artist",
+            "Web Audio samples",
+            "https://mdn.github.io/webaudio-examples/multi-track/bassguitar.mp3",
+            "tide",
+            "Deep focus"
+        )
+    ];
+}
+
+public fun find_track(catalog: Track[], id: string): Option<Track> {
+    for (let track in catalog) {
+        if track.id == id {
+            return Option.Some(track);
+        }
+    }
+    return Option.None;
+}
+
+public fun search_tracks(catalog: Track[], query: string): List<Track> {
+    let matches = List<Track>();
+    let term = query.trim().to_lower();
+    for (let track in catalog) {
+        if term
+            == ""
+            || (track.title + " " + track.artist + " " + track.album)
+            .to_lower()
+            .contains(term) {
+            matches.push(track);
+        }
+    }
+    return matches;
+}
+
+public fun search_playlists(playlists: List<Playlist>, query: string): List<Playlist> {
+    let matches = List<Playlist>();
+    let term = query.trim().to_lower();
+    for (let playlist in playlists) {
+        if term == "" || playlist.name.to_lower().contains(term) {
+            matches.push(playlist);
+        }
+    }
+    return matches;
+}

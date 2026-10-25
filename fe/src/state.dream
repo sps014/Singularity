@@ -1,0 +1,79 @@
+module singularity;
+
+import common;
+import system;
+import system.audio;
+import system.collections;
+
+public class AppState {
+    public catalog: Track[];
+    public library: Library;
+    public queue: PlaybackQueue;
+    public audio: Audio;
+    public selected: string;
+    public view: string;
+    public query: string;
+    public mood: string;
+    public loading: bool;
+    public generation: int;
+    public notice: string;
+    public failed: bool;
+    public alive: bool;
+    public scrubbing: string;
+
+    public constructor() {
+        this.catalog = demo_catalog();
+        this.library = Library();
+        this.queue = PlaybackQueue();
+        this.audio = Audio();
+        this.audio.volume = 0.7f;
+        this.selected = "1";
+        this.view = "browse";
+        this.query = "";
+        this.mood = "All sounds";
+        this.loading = false;
+        this.generation = 0;
+        this.notice = "";
+        this.failed = false;
+        this.alive = true;
+        this.scrubbing = "";
+    }
+}
+
+let application = AppState();
+
+internal fun state(): AppState {
+    return application;
+}
+
+internal fun visible_tracks(): List<Track> {
+    let app = state();
+    let matches = search_tracks(app.catalog, app.query);
+    let result = List<Track>();
+    let playlist = app.library.find_playlist(app.view);
+    for (let track in matches) {
+        let include = true;
+        if app.view == "liked" {
+            include = app.library.liked.contains(track.id);
+        } else if playlist.is_some() {
+            include = playlist.unwrap().tracks.contains(track.id);
+        } else if app.view == "browse" && app.mood != "All sounds" {
+            include = track.mood == app.mood;
+        }
+        if include {
+            result.push(track);
+        }
+    }
+    if playlist.is_some() {
+        let ordered = List<Track>();
+        for (let id in playlist.unwrap().tracks) {
+            for (let track in result) {
+                if track.id == id {
+                    ordered.push(track);
+                }
+            }
+        }
+        return ordered;
+    }
+    return result;
+}

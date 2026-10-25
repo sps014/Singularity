@@ -1,0 +1,257 @@
+module singularity;
+
+import common;
+import state;
+import dom;
+import system;
+
+internal fun navigation_item(id: string, title: string, glyph: string): js {
+    let active = state().view == id;
+    if id == "library" && state().view.starts_with("playlist-") {
+        active = true;
+    }
+    let item = button("nav", title, glyph, active ? "nav-item active" : "nav-item");
+    item.setAttribute("data-id", id);
+    if active {
+        item.setAttribute("aria-current", "page");
+    }
+    item.appendChild(node("span", "", title));
+    return item;
+}
+
+internal fun render_navigation(): void {
+    el("navigation").replaceChildren();
+    el("mobile-nav").replaceChildren();
+    el("navigation").appendChild(navigation_item("browse", "Discover", "home"));
+    el("navigation").appendChild(navigation_item("search", "Search", "search"));
+    el("navigation").appendChild(navigation_item("library", "Your library", "library"));
+    el("navigation").appendChild(navigation_item("liked", "Liked songs", "heart"));
+    el("mobile-nav").appendChild(navigation_item("browse", "Discover", "home"));
+    el("mobile-nav").appendChild(navigation_item("search", "Search", "search"));
+    el("mobile-nav").appendChild(navigation_item("library", "Library", "library"));
+    el("sidebar-playlists").replaceChildren();
+    for (let playlist in state().library.playlists) {
+        let item = navigation_item(playlist.id, playlist.name, "");
+        item.prepend(node("span", "playlist-symbol", "▧"));
+        el("sidebar-playlists").appendChild(item);
+    }
+}
+
+internal fun track_card(track: Track): js {
+    let card = node("article", "track-card", "");
+    let cover = button("track", "Play " + track.title, "", "cover-button");
+    cover.setAttribute("data-id", track.id);
+    cover.appendChild(artwork(track.artwork, "cover-image"));
+    let play = node("span", "cover-play", "");
+    play.innerHTML = icon("play");
+    cover.appendChild(play);
+    let mood = node("span", "cover-mood", track.mood);
+    cover.appendChild(mood);
+    card.appendChild(cover);
+    let title = button("track", "Play " + track.title, "", "track-title-button");
+    title.setAttribute("data-id", track.id);
+    title.textContent = track.title;
+    card.appendChild(title);
+    card.appendChild(node("p", "track-subtitle", track.artist + " · " + track.mood));
+    return card;
+}
+
+internal fun track_row(track: Track, index: int): js {
+    let app = state();
+    let row = node("div", app.selected == track.id ? "track-row selected" : "track-row", "");
+    row.setAttribute("data-track", track.id);
+    let play = button("track", "Play " + track.title, "play", "row-play icon-button");
+    play.setAttribute("data-id", track.id);
+    row.appendChild(play);
+    let info = button("track", "Play " + track.title, "", "row-info");
+    info.setAttribute("data-id", track.id);
+    info.appendChild(artwork(track.artwork, "row-art"));
+    let text = node("span", "row-text", "");
+    text.appendChild(node("strong", "", track.title));
+    text.appendChild(node("small", "", track.artist));
+    info.appendChild(text);
+    row.appendChild(info);
+    row.appendChild(node("span", "row-album", track.album));
+    let liked = app.library.liked.contains(track.id);
+    let like = button(
+        "like",
+        liked ? "Unlike " + track.title : "Like " + track.title,
+        "heart",
+        liked ? "icon-button liked" : "icon-button"
+    );
+    like.setAttribute("data-id", track.id);
+    like.setAttribute("aria-pressed", liked ? "true" : "false");
+    row.appendChild(like);
+    let add = button("add", "Add " + track.title + " to playlist", "plus", "icon-button");
+    add.setAttribute("data-id", track.id);
+    row.appendChild(add);
+    if app.library.find_playlist(app.view).is_some() {
+        let remove = button(
+            "remove",
+            "Remove " + track.title + " from playlist",
+            "close",
+            "icon-button"
+        );
+        remove.setAttribute("data-id", track.id);
+        row.appendChild(remove);
+    }
+    return row;
+}
+
+internal fun render_playlist_cards(parent: js, query: string): void {
+    let playlists = search_playlists(state().library.playlists, query);
+    let grid = node("div", "playlist-grid", "");
+    for (let playlist in playlists) {
+        let card = button("nav", "Open " + playlist.name, "", "playlist-card");
+        card.setAttribute("data-id", playlist.id);
+        let visual = node("span", "playlist-cover", "");
+        if playlist.tracks.length > 0 {
+            let track = find_track(state().catalog, playlist.tracks[0]);
+            if track.is_some() {
+                visual.appendChild(artwork(track.unwrap().artwork, ""));
+            }
+        } else {
+            visual.innerHTML = icon("library");
+        }
+        card.appendChild(visual);
+        let text = node("span", "", "");
+        text.appendChild(node("strong", "", playlist.name));
+        text.appendChild(
+            node("small", "", playlist.tracks.length.to_string() + " songs · Made by you")
+        );
+        card.appendChild(text);
+        grid.appendChild(card);
+    }
+    parent.appendChild(grid);
+    if playlists.length == 0 {
+        parent.appendChild(
+            node(
+                "p",
+                "empty-state",
+                query
+                    == ""
+                    ? "A new playlist, a new world. Create your first one." : "No playlists match your search."
+            )
+        );
+    }
+}
+
+internal fun render_view(): void {
+    let app = state();
+    render_navigation();
+    let content = el("content");
+    content.replaceChildren();
+    let heading = node("section", "view-heading", "");
+    let eyebrow = "TUNE OUT. TUNE IN.";
+    let title = "Find your frequency.";
+    let subtitle = "A few good sounds. An entirely different headspace.";
+    if app.view == "search" {
+        eyebrow = "FOLLOW YOUR CURIOSITY";
+        title = app.query == "" ? "Something will find you." : "Search results";
+        subtitle = app.query
+            == ""
+            ? "Songs, artists, albums and your playlists. All right here." : "Finding a little more of what you love.";
+    } else if app.view == "liked" {
+        eyebrow = "KEPT CLOSE";
+        title = "The ones you love.";
+        subtitle = app.library.liked.length.to_string() + " songs that feel like you.";
+    } else if app.view == "library" {
+        eyebrow = "YOUR OWN LITTLE UNIVERSE";
+        title = "A place for every feeling.";
+        subtitle = "Your playlists, your favourites, your kind of space.";
+    } else if app.library.find_playlist(app.view).is_some() {
+        eyebrow = "MADE BY YOU";
+        title = app.library.find_playlist(app.view).unwrap().name;
+        subtitle = visible_tracks().length.to_string() + " songs · Your personal soundtrack";
+    }
+    heading.appendChild(node("p", "eyebrow", eyebrow));
+    heading.appendChild(node("h1", "", title));
+    heading.appendChild(node("p", "subtitle", subtitle));
+    content.appendChild(heading);
+    if app.view == "browse" {
+        let hero = node("section", "hero", "");
+        hero.appendChild(node("span", "hero-tag", "THE AFTER HOURS COLLECTION"));
+        hero.appendChild(node("h2", "", "Stay a little\nlonger."));
+        hero.appendChild(node("p", "", "For the moments between everything."));
+        let play = button("play-all", "Play the collection", "play", "primary-button");
+        play.appendChild(node("span", "", "Press play. Disappear."));
+        hero.appendChild(play);
+        hero.appendChild(node("span", "hero-index", "VOL. 001 / INFINITE POSSIBILITIES"));
+        content.appendChild(hero);
+        let moods = node("div", "mood-list", "");
+        for (let mood in ["All sounds", "Dreamy", "After hours", "Slow living", "Deep focus"]) {
+            let chip = button("mood", mood, "", app.mood == mood ? "mood-chip active" : "mood-chip");
+            chip.textContent = mood;
+            chip.setAttribute("data-id", mood);
+            chip.setAttribute("aria-pressed", app.mood == mood ? "true" : "false");
+            moods.appendChild(chip);
+        }
+        content.appendChild(moods);
+        let label = node("div", "section-heading", "");
+        label.appendChild(node("h2", "", "A world worth getting lost in"));
+        label.appendChild(node("span", "", "CURATED FOR YOUR SPACE"));
+        content.appendChild(label);
+        let grid = node("div", "track-grid", "");
+        for (let track in visible_tracks()) {
+            grid.appendChild(track_card(track));
+        }
+        content.appendChild(grid);
+    }
+    if app.view == "library" {
+        let tools = node("div", "section-heading", "");
+        let liked = button("nav", "Open liked songs", "heart", "soft-button");
+        liked.setAttribute("data-id", "liked");
+        liked.appendChild(
+            node("span", "", "Liked songs · " + app.library.liked.length.to_string())
+        );
+        tools.appendChild(liked);
+        let create = button("create", "Create playlist", "plus", "soft-button");
+        create.appendChild(node("span", "", "New playlist"));
+        tools.appendChild(create);
+        content.appendChild(tools);
+        render_playlist_cards(content, app.query);
+    } else {
+        let section = node("section", "songs-section", "");
+        let tools = node("div", "section-heading", "");
+        tools.appendChild(node("h2", "", app.view == "browse" ? "Your next favourite" : "Songs"));
+        if app.library.find_playlist(app.view).is_some() {
+            let actions = node("div", "inline-actions", "");
+            actions.appendChild(button("rename", "Rename playlist", "edit", "icon-button"));
+            actions.appendChild(button("delete", "Delete playlist", "trash", "icon-button"));
+            tools.appendChild(actions);
+        } else {
+            let play = button("play-all", "Play all songs", "play", "text-button");
+            play.appendChild(node("span", "", "Play all"));
+            tools.appendChild(play);
+        }
+        section.appendChild(tools);
+        let tracks = visible_tracks();
+        for (let i = 0; i < tracks.length; i = i + 1) {
+            section.appendChild(track_row(tracks[i], i));
+        }
+        if tracks.length == 0 {
+            section.appendChild(
+                node(
+                    "p",
+                    "empty-state",
+                    app.view
+                        == "liked"
+                        ? "Tap a heart on any song. Your favourites will feel at home here." : "No songs here yet. Try another search or add songs from Discover."
+                )
+            );
+        }
+        content.appendChild(section);
+        if app.view == "search" {
+            content.appendChild(node("h2", "section-label", "Your playlists"));
+            render_playlist_cards(content, app.query);
+        }
+    }
+    content.appendChild(
+        node("p", "page-footnote", "A LITTLE FURTHER FROM THE ORDINARY.  /  SINGULARITY")
+    );
+    let credits = node("a", "audio-credits", "Demo music: Jan Morgenstern · CC BY-NC-ND 3.0");
+    credits.href = "https://github.com/mdn/webaudio-examples";
+    credits.target = "_blank";
+    credits.rel = "noopener noreferrer";
+    content.appendChild(credits);
+}

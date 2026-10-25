@@ -1,0 +1,132 @@
+module singularity;
+
+import common;
+import state;
+import player_view;
+import system;
+import system.audio;
+import system.collections;
+
+internal async fun start_selected(): void {
+    let app = state();
+    app.generation = app.generation + 1;
+    let generation = app.generation;
+    let volume = app.audio.volume;
+    let muted = app.audio.muted;
+    app.audio.close();
+    let track = find_track(app.catalog, app.selected).unwrap();
+    let audio = Audio(track.url);
+    app.audio = audio;
+    audio.volume = volume;
+    audio.muted = muted;
+    app.loading = true;
+    app.scrubbing = "";
+    app.failed = false;
+    app.notice = "";
+    render_player();
+    let started = audio.play().await;
+    if generation != app.generation {
+        return;
+    }
+    app.loading = false;
+    if started.is_err() {
+        app.failed = true;
+        app.notice = "This stream could not start. Check your connection and try again.";
+    }
+    refresh_player();
+}
+
+internal async fun toggle_playback(): void {
+    let app = state();
+    if app.loading {
+        app.generation = app.generation + 1;
+        let muted = app.audio.muted;
+        app.audio.close();
+        let volume = app.audio.volume;
+        app.audio = Audio();
+        app.audio.volume = volume;
+        app.audio.muted = muted;
+        app.loading = false;
+        refresh_player();
+        return;
+    }
+    if app.audio.src == "" || app.failed {
+        if app.queue.tracks.length == 0 {
+            let ids = List<string>();
+            for (let track in app.catalog) {
+                ids.push(track.id);
+            }
+            app.queue.replace(ids, app.selected);
+        }
+        start_selected().await;
+    } else if !app.audio.paused && !app.audio.ended {
+        app.audio.pause();
+    } else {
+        if app.audio.ended {
+            app.audio.current_time = 0.0d;
+        }
+        let generation = app.generation;
+        let resumed = app.audio.play().await;
+        if generation == app.generation && resumed.is_err() {
+            app.failed = true;
+            app.notice = "Playback could not resume. Try again.";
+        }
+    }
+    refresh_player();
+}
+
+internal fun play_collection(id: string): void {
+    let app = state();
+    let ids = List<string>();
+    for (let track in visible_tracks()) {
+        ids.push(track.id);
+    }
+    if ids.length == 0 {
+        return;
+    }
+    let selected = id == "" ? ids[0] : id;
+    app.queue.replace(ids, selected);
+    app.selected = selected;
+    Promise.start(start_selected());
+}
+
+internal fun next_track(direction: int, automatic: bool): void {
+    let app = state();
+    if direction < 0 && app.audio.current_time > 3.0d && !app.audio.seeking {
+        app.audio.current_time = 0.0d;
+        return;
+    }
+    let next = app.queue.advance(direction, automatic);
+    if next.is_some() {
+        app.selected = next.unwrap();
+        Promise.start(start_selected());
+    } else {
+        refresh_player();
+    }
+}
+
+internal async fun audio_loop(): void {
+    let app = state();
+    while app.alive {
+        for (let event in app.audio.poll_events()) {
+            switch (event) {
+                AudioEvent.Ended(_) => next_track(1, true),
+                AudioEvent.Waiting(_) => {
+                    app.notice = "Buffering… your stream will resume shortly.";
+                }
+                AudioEvent.Playing(_) => {
+                    app.notice = "";
+                }
+                AudioEvent.Error(_, error, operation, _) => {
+                    if error.code() != "ECANCELLED" {
+                        app.notice = operation + ": " + error.message();
+                        app.failed = operation == "play" || operation == "load";
+                    }
+                }
+                _ => {}
+            }
+        }
+        refresh_player();
+        Time.delay(200).await;
+    }
+}

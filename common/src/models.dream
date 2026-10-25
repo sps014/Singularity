@@ -1,0 +1,54 @@
+import system;
+import system.collections;
+
+public class Track {
+    public id: string;
+    public title: string;
+    public artist: string;
+    public album: string;
+    public url: string;
+    public artwork: string;
+    public mood: string;
+
+    public constructor(
+        id: string,
+        title: string,
+        artist: string,
+        album: string,
+        url: string,
+        artwork: string,
+        mood: string
+    ) {
+        this.id = id;
+        this.title = title;
+        this.artist = artist;
+        this.album = album;
+        this.url = url;
+        this.artwork = artwork;
+        this.mood = mood;
+    }
+}
+
+public class Playlist {
+    public id: string;
+    public name: string;
+    public tracks: List<string>;
+
+    public constructor(id: string, name: string) {
+        this.id = id;
+        this.name = name;
+        this.tracks = List<string>();
+    }
+
+    public fun add(track_id: string): bool {
+        if this.tracks.contains(track_id) {
+            return false;
+        }
+        this.tracks.push(track_id);
+        return true;
+    }
+
+    public fun remove(track_id: string): bool {
+        return this.tracks.remove(track_id);
+    }
+}

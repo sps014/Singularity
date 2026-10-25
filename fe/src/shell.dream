@@ -1,0 +1,149 @@
+module singularity;
+
+import dom;
+
+fun sidebar_markup(): string {
+    return "<aside class=\"sidebar\">"
+        + "<a class=\"brand\" href=\"#\" data-action=\"nav\" data-id=\"browse\" aria-label=\"Singularity home\">"
+        + "<span class=\"brand-mark\">◒</span> singularity<span class=\"brand-dot\">.</span>"
+        + "</a>"
+        + "<p class=\"nav-caption\">YOUR SPACE</p>"
+        + "<nav id=\"navigation\" aria-label=\"Main navigation\">"
+        + "</nav>"
+        + "<div class=\"playlist-heading\">"
+        + "<span>YOUR PLAYLISTS</span>"
+        + "<button class=\"icon-button\" data-action=\"create\" aria-label=\"Create playlist\">+</button>"
+        + "</div>"
+        + "<nav id=\"sidebar-playlists\" aria-label=\"Playlists\">"
+        + "</nav>"
+        + "<div class=\"sidebar-note\">"
+        + "<span class=\"tiny-star\">✦</span>"
+        + "<p>A little further<br>from the ordinary.</p>"
+        + "<span>MAKE YOURSELF AT HOME</span>"
+        + "</div>"
+        + "<div class=\"local-badge\">" + "<i>" + "</i> Your music. Your space.</div>" + "</aside>";
+}
+
+fun workspace_markup(): string {
+    return "<div class=\"workspace\">"
+        + "<header class=\"topbar\">"
+        + "<div class=\"breadcrumb\">YOUR DAILY ESCAPE <span>✦</span>"
+        + "</div>"
+        + "<label class=\"searchbox\">"
+        + "<span id=\"search-icon\">"
+        + "</span>"
+        + "<input id=\"search\" type=\"search\" placeholder=\"Find your next feeling\" aria-label=\"Search songs, artists, albums and playlists\" autocomplete=\"off\">"
+        + "<kbd>/</kbd>"
+        + "</label>"
+        + "<span class=\"avatar\" aria-label=\"Local library\">S</span>"
+        + "</header>" + "<main id=\"content\" tabindex=\"-1\">" + "</main>" + "</div>";
+}
+
+fun now_playing_markup(): string {
+    return "<aside class=\"now-panel\" id=\"now-panel\" aria-label=\"Now playing\">"
+        + "<div class=\"panel-title\">"
+        + "<span>NOW PLAYING</span>"
+        + "<button class=\"icon-button close-player\" data-action=\"close-player\" aria-label=\"Close player\">×</button>"
+        + "<span class=\"live-dot\">"
+        + "</span>"
+        + "</div>"
+        + "<div id=\"now-art\">"
+        + "</div>"
+        + "<div class=\"now-meta\">"
+        + "<div>"
+        + "<h2 id=\"now-title\">"
+        + "</h2>"
+        + "<p id=\"now-artist\">"
+        + "</p>"
+        + "</div>"
+        + "<button id=\"now-like\" class=\"icon-button\" data-action=\"like-current\" aria-label=\"Like current song\">"
+        + "</button>"
+        + "</div>"
+        + "<div class=\"listening-badge\">"
+        + "<span>✦</span> A soundtrack for right now</div>"
+        + "<div class=\"panel-progress\">"
+        + "<input id=\"panel-seek\" type=\"range\" min=\"0\" max=\"1000\" value=\"0\" aria-label=\"Seek\">"
+        + "<div class=\"time-row\">"
+        + "<span id=\"panel-time\">0:00</span>"
+        + "<span id=\"panel-duration\">—:—</span>"
+        + "</div>"
+        + "</div>"
+        + "<div id=\"panel-controls\" class=\"transport\">"
+        + "</div>"
+        + "<div class=\"panel-volume\">"
+        + "<button id=\"panel-mute\" class=\"icon-button\" data-action=\"mute\" aria-label=\"Mute\">"
+        + "</button>"
+        + "<input id=\"panel-volume\" type=\"range\" min=\"0\" max=\"100\" value=\"70\" aria-label=\"Player volume\">"
+        + "</div>"
+        + "<div class=\"queue-heading\">"
+        + "<h3>Up next</h3>"
+        + "<span id=\"queue-count\">"
+        + "</span>"
+        + "</div>"
+        + "<div id=\"queue-list\">"
+        + "</div>"
+        + "<div class=\"audio-source\">"
+        + "<i>" + "</i> DIRECT STREAM <span>AUDIO</span>" + "</div>" + "</aside>";
+}
+
+fun player_bar_markup(): string {
+    return "<footer class=\"player-bar\">"
+        + "<button class=\"mini-track\" data-action=\"expand-player\" aria-label=\"Expand now playing\">"
+        + "<span id=\"mini-art\">"
+        + "</span>"
+        + "<span>"
+        + "<strong id=\"mini-title\">"
+        + "</strong>"
+        + "<small id=\"mini-artist\">"
+        + "</small>"
+        + "</span>"
+        + "<span class=\"mini-expand\">⌃</span>"
+        + "</button>"
+        + "<div class=\"bar-center\">"
+        + "<div id=\"bar-controls\" class=\"transport compact\">"
+        + "</div>"
+        + "<div class=\"bar-progress\">"
+        + "<span id=\"bar-time\">0:00</span>"
+        + "<input id=\"bar-seek\" type=\"range\" min=\"0\" max=\"1000\" value=\"0\" aria-label=\"Seek playback\">"
+        + "<span id=\"bar-duration\">—:—</span>"
+        + "</div>"
+        + "</div>"
+        + "<div class=\"bar-volume\">"
+        + "<button id=\"mute\" class=\"icon-button\" data-action=\"mute\" aria-label=\"Mute\">"
+        + "</button>"
+        + "<input id=\"volume\" type=\"range\" min=\"0\" max=\"100\" value=\"70\" aria-label=\"Volume\">"
+        + "<button id=\"queue-toggle\" class=\"icon-button\" data-action=\"toggle-queue\" aria-label=\"Toggle queue\">"
+        + "</button>"
+        + "</div>"
+        + "<button id=\"mobile-play\" class=\"icon-button\" data-action=\"play\" aria-label=\"Play\">"
+        + "</button>" + "</footer>";
+}
+
+fun dialogs_markup(): string {
+    return "<div id=\"notice\" role=\"status\" aria-live=\"polite\" hidden>"
+        + "</div>"
+        + "<dialog id=\"editor\">"
+        + "<form id=\"editor-form\">"
+        + "<div class=\"dialog-heading\">"
+        + "<h2 id=\"editor-title\">Create playlist</h2>"
+        + "<button type=\"button\" data-action=\"close-dialog\" class=\"icon-button\" aria-label=\"Close dialog\">×</button>"
+        + "</div>"
+        + "<label for=\"playlist-name\">Playlist name</label>"
+        + "<input id=\"playlist-name\" maxlength=\"80\" placeholder=\"Give this feeling a name\" required>"
+        + "<div id=\"playlist-picker\">"
+        + "</div>"
+        + "<button id=\"editor-submit\" type=\"submit\" class=\"primary-button\">Create playlist</button>"
+        + "</form>" + "</dialog>";
+}
+
+internal fun render_shell(): void {
+    el("app")
+        .innerHTML = "<div class=\"ambient ambient-one\"></div><div class=\"ambient ambient-two\"></div><div class=\"app-shell\">"
+        + sidebar_markup()
+        + workspace_markup()
+        + now_playing_markup()
+        + player_bar_markup()
+        + "<nav id=\"mobile-nav\" aria-label=\"Mobile navigation\"></nav></div>" + dialogs_markup();
+    el("search-icon").innerHTML = icon("search");
+    el("queue-toggle").innerHTML = icon("queue");
+}

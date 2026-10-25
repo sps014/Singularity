@@ -1,0 +1,151 @@
+module singularity;
+
+import common;
+import state;
+import dom;
+import system;
+
+internal fun make_transport(parent: js): void {
+    parent.appendChild(button("shuffle", "Shuffle", "shuffle", "icon-button shuffle-button"));
+    parent.appendChild(button("prev", "Previous track", "prev", "icon-button"));
+    parent.appendChild(button("play", "Play", "play", "play-button"));
+    parent.appendChild(button("next", "Next track", "next", "icon-button"));
+    parent.appendChild(button("repeat", "Repeat off", "repeat", "icon-button repeat-button"));
+}
+
+internal fun render_player(): void {
+    let app = state();
+    let track = find_track(app.catalog, app.selected).unwrap();
+    let rows = js.global.document.querySelectorAll("[data-track]");
+    let row_count: int = rows.length;
+    for (let i = 0; i < row_count; i = i + 1) {
+        let id: string = rows[i].getAttribute("data-track");
+        rows[i].classList.toggle("selected", id == app.selected);
+    }
+    el("now-art").replaceChildren(artwork(track.artwork, "now-cover"));
+    el("mini-art").replaceChildren(artwork(track.artwork, "mini-cover"));
+    el("now-title").textContent = track.title;
+    el("now-artist").textContent = track.artist + " · " + track.album;
+    el("mini-title").textContent = track.title;
+    el("mini-artist").textContent = track.artist;
+    let liked = app.library.liked.contains(track.id);
+    el("now-like").innerHTML = icon("heart");
+    el("now-like").classList.toggle("liked", liked);
+    el("now-like").setAttribute("aria-label", liked ? "Unlike current song" : "Like current song");
+    el("now-like").setAttribute("aria-pressed", liked ? "true" : "false");
+    render_queue();
+    refresh_player();
+}
+
+internal fun render_queue(): void {
+    let app = state();
+    let list = el("queue-list");
+    list.replaceChildren();
+    let remaining = app.queue.tracks.length - app.queue.index - 1;
+    el("queue-count").textContent = (remaining > 0 ? remaining : 0).to_string() + " songs";
+    for (let i = app.queue.index + 1; i < app.queue.tracks.length; i = i + 1) {
+        let found = find_track(app.catalog, app.queue.tracks[i]);
+        if found.is_some() {
+            let track = found.unwrap();
+            let item = button("queue-track", "Play " + track.title, "", "queue-item");
+            item.setAttribute("data-id", i.to_string());
+            item.appendChild(artwork(track.artwork, "queue-art"));
+            let text = node("span", "", "");
+            text.appendChild(node("strong", "", track.title));
+            text.appendChild(node("small", "", track.artist));
+            item.appendChild(text);
+            let glyph = node("span", "queue-play", "");
+            glyph.innerHTML = icon("play");
+            item.appendChild(glyph);
+            list.appendChild(item);
+        }
+    }
+    if remaining <= 0 {
+        list.appendChild(
+            node("p", "queue-empty", "You're all caught up. Stay a while, or find something new.")
+        );
+    }
+}
+
+internal fun update_play_control(control: js, label: string, glyph: string): void {
+    let previous: string = control.getAttribute("aria-label");
+    if previous != label || control.childElementCount.to_int() == 0 {
+        control.setAttribute("aria-label", label);
+        control.innerHTML = icon(glyph);
+        control.title = label;
+    }
+}
+
+internal fun refresh_player(): void {
+    let app = state();
+    let audio = app.audio;
+    let playing = !audio.paused && !audio.ended;
+    let controls = js.global.document.querySelectorAll("[data-action='play']");
+    let count: int = controls.length;
+    let label = app.loading
+        ? "Cancel loading" : (playing ? "Pause" : (app.failed ? "Retry playback" : "Play"));
+    for (let i = 0; i < count; i = i + 1) {
+        update_play_control(controls[i], label, playing || app.loading ? "pause" : "play");
+        controls[i].classList.toggle("loading", app.loading);
+    }
+    let shuffles = js.global.document.querySelectorAll("[data-action='shuffle']");
+    let repeats = js.global.document.querySelectorAll("[data-action='repeat']");
+    for (let i = 0; i < 2; i = i + 1) {
+        shuffles[i].classList.toggle("enabled", app.queue.shuffled);
+        shuffles[i].setAttribute("aria-pressed", app.queue.shuffled ? "true" : "false");
+        repeats[i].classList.toggle("enabled", app.queue.repeat_mode != 0);
+        repeats[i]
+            .setAttribute(
+                "aria-label",
+                app.queue.repeat_mode
+                    == 0 ? "Repeat off" : (app.queue.repeat_mode == 1 ? "Repeat all" : "Repeat one")
+            );
+        repeats[i].setAttribute("data-one", app.queue.repeat_mode == 2 ? "1" : "");
+    }
+    let duration = audio.duration;
+    let current = audio.current_time;
+    let known = duration.is_some() && duration.unwrap_or(0.0d) > 0.0d;
+    for (let prefix in ["panel", "bar"]) {
+        el(prefix + "-time").textContent = clock(current);
+        el(prefix + "-duration").textContent = known ? clock(duration.unwrap()) : "—:—";
+        let seek = el(prefix + "-seek");
+        seek.disabled = !known || audio.seeking || app.loading;
+        let progress = known ? current / duration.unwrap() * 1000.0d : 0.0d;
+        if app.scrubbing != prefix + "-seek" {
+            seek.value = progress;
+            seek.style.setProperty("--fill", (progress / 10.0d).to_string() + "%");
+        }
+        seek.setAttribute(
+            "aria-valuetext",
+            clock(current) + " of " + (known ? clock(duration.unwrap()) : "unknown duration")
+        );
+    }
+    update_play_control(el("mute"), audio.muted ? "Unmute" : "Mute", audio.muted ? "mute" : "volume");
+    update_play_control(
+        el("panel-mute"),
+        audio.muted ? "Unmute" : "Mute",
+        audio.muted ? "mute" : "volume"
+    );
+    el("volume").style.setProperty("--fill", ((int)(audio.volume * 100.0f)).to_string() + "%");
+    el("panel-volume").value = (int)(audio.volume * 100.0f);
+    el("panel-volume").style.setProperty(
+        "--fill",
+        ((int)(audio.volume * 100.0f)).to_string() + "%"
+    );
+    let notice = el("notice");
+    notice.hidden = app.notice == "";
+    let displayed: string = notice.getAttribute("data-message");
+    if displayed != app.notice {
+        notice.setAttribute("data-message", app.notice);
+        notice.textContent = app.notice;
+        if app.failed && app.notice != "" {
+            let retry = button("retry", "Retry playback", "", "text-button");
+            retry.textContent = "Retry";
+            notice.appendChild(retry);
+        }
+        if app.notice != "" {
+            let dismiss = button("dismiss", "Dismiss message", "close", "icon-button");
+            notice.appendChild(dismiss);
+        }
+    }
+}

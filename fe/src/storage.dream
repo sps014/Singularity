@@ -1,0 +1,100 @@
+module singularity;
+
+import common;
+import state;
+import system;
+import system.json;
+
+internal fun restore_library(): void {
+    let app = state();
+    let stored = js.global.singularityStorage.read();
+    let ok: bool = stored.ok;
+    if !ok {
+        app.notice = "Browser storage is unavailable. Your library will last for this session.";
+        return;
+    }
+    let invalid: bool = stored.invalid;
+    if invalid {
+        app.notice = "Your saved library could not be read. You can start fresh here.";
+        return;
+    }
+    let raw: string = stored.value;
+    if raw == "" {
+        let first = app.library.create_playlist("Late night rotation").unwrap();
+        first.add("1");
+        first.add("2");
+        let second = app.library.create_playlist("A little room to breathe").unwrap();
+        second.add("3");
+        second.add("4");
+        return;
+    }
+    let parsed = Json.deserialize<JsonValue>(raw);
+    if parsed.is_err() {
+        app.notice = "Your saved library could not be read. You can start fresh here.";
+        return;
+    }
+    let root = parsed.unwrap();
+    if !root.is_object() || root["version"].as_int().unwrap_or(0) != 1 {
+        app.notice = "This saved library format is unsupported. A new local library is ready.";
+        return;
+    }
+    let likes = root["liked"].as_array();
+    if likes.is_some() {
+        for (let item in likes.unwrap()) {
+            let id = item.as_string().unwrap_or("");
+            if find_track(app.catalog, id).is_some() && !app.library.liked.contains(id) {
+                app.library.liked.push(id);
+            }
+        }
+    }
+    let playlists = root["playlists"].as_array();
+    if playlists.is_some() {
+        for (let item in playlists.unwrap()) {
+            let id = item["id"].as_string().unwrap_or("");
+            let name = item["name"].as_string().unwrap_or("").trim();
+            if id.starts_with("playlist-")
+                && id.length <= 128 && name != "" && app.library.find_playlist(id)
+                .is_none() {
+                let playlist = Playlist(id, name);
+                let tracks = item["tracks"].as_array();
+                if tracks.is_some() {
+                    for (let entry in tracks.unwrap()) {
+                        let track_id = entry.as_string().unwrap_or("");
+                        if find_track(app.catalog, track_id).is_some() {
+                            playlist.add(track_id);
+                        }
+                    }
+                }
+                app.library.playlists.push(playlist);
+            }
+        }
+    }
+}
+
+internal fun persist_library(): void {
+    let app = state();
+    let root = JsonValue.dict();
+    root["version"] = JsonValue.from_int(1);
+    let likes = JsonValue.array();
+    for (let id in app.library.liked) {
+        likes.push(JsonValue.from_string(id));
+    }
+    root["liked"] = likes;
+    let playlists = JsonValue.array();
+    for (let playlist in app.library.playlists) {
+        let item = JsonValue.dict();
+        item["id"] = JsonValue.from_string(playlist.id);
+        item["name"] = JsonValue.from_string(playlist.name);
+        let tracks = JsonValue.array();
+        for (let id in playlist.tracks) {
+            tracks.push(JsonValue.from_string(id));
+        }
+        item["tracks"] = tracks;
+        playlists.push(item);
+    }
+    root["playlists"] = playlists;
+    let ok: bool = js.global.singularityStorage.write(Json.serialize(root));
+    if !ok {
+        app.notice = "Could not save to this browser. Your changes are available for this session.";
+    }
+}

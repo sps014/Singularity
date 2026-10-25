@@ -1,0 +1,89 @@
+import common;
+import system;
+import system.collections;
+import system.testing;
+
+@test
+fun search_matches_metadata_and_ignores_case(): void {
+    let catalog = demo_catalog();
+    Assert.eq(search_tracks(catalog, "  VIPER ").length, 1);
+    Assert.eq(search_tracks(catalog, "KEVIN MACLEOD").length, 1);
+    Assert.eq(search_tracks(catalog, "web audio samples").length, 4);
+    Assert.eq(search_tracks(catalog, "unfindable").length, 0);
+    Assert.eq(search_tracks(catalog, "").length, 4);
+}
+
+@test
+fun likes_toggle_without_duplicates(): void {
+    let library = Library();
+    Assert.is_true(library.toggle_like("1"));
+    Assert.is_true(library.liked.contains("1"));
+    Assert.is_true(!library.toggle_like("1"));
+    Assert.eq(library.liked.length, 0);
+}
+
+@test
+fun playlists_validate_names_and_preserve_order(): void {
+    let library = Library();
+    Assert.is_true(library.create_playlist("  ").is_none());
+    let playlist = library.create_playlist(" Night drive ").unwrap();
+    Assert.eq(playlist.name, "Night drive");
+    Assert.is_true(playlist.add("2"));
+    Assert.is_true(playlist.add("1"));
+    Assert.is_true(!playlist.add("2"));
+    Assert.eq(playlist.tracks.length, 2);
+    Assert.eq(playlist.tracks[0], "2");
+    Assert.is_true(playlist.remove("2"));
+    Assert.eq(playlist.tracks[0], "1");
+    Assert.is_true(library.rename_playlist(playlist.id, "Quiet hours"));
+    Assert.is_true(!library.rename_playlist(playlist.id, " "));
+    Assert.eq(search_playlists(library.playlists, "QUIET").length, 1);
+    Assert.is_true(library.delete_playlist(playlist.id));
+    Assert.is_true(!library.delete_playlist(playlist.id));
+}
+
+@test
+fun restored_playlist_ids_cannot_collide(): void {
+    let library = Library();
+    library.playlists.push(Playlist("playlist-1", "Saved"));
+    let created = library.create_playlist("New").unwrap();
+    Assert.eq(created.id, "playlist-2");
+}
+
+@test
+fun queue_respects_end_and_repeat_modes(): void {
+    let queue = PlaybackQueue();
+    Assert.is_true(queue.advance(1, true).is_none());
+    let ids: List<string> = ["1", "2", "3"];
+    queue.replace(ids, "2");
+    Assert.eq(queue.current().unwrap(), "2");
+    Assert.eq(queue.advance(1, true).unwrap(), "3");
+    Assert.is_true(queue.advance(1, true).is_none());
+    queue.repeat_mode = 1;
+    Assert.eq(queue.advance(1, true).unwrap(), "1");
+    queue.repeat_mode = 2;
+    Assert.eq(queue.advance(1, true).unwrap(), "1");
+    Assert.eq(queue.advance(1, false).unwrap(), "2");
+    Assert.eq(queue.advance(-1, false).unwrap(), "1");
+    Assert.eq(queue.advance(-1, false).unwrap(), "3");
+}
+
+@test
+fun shuffle_preserves_membership_current_and_original_order(): void {
+    let queue = PlaybackQueue();
+    let ids: List<string> = ["1", "2", "3", "4"];
+    queue.replace(ids, "2");
+    queue.toggle_shuffle();
+    Assert.is_true(queue.shuffled);
+    Assert.eq(queue.index, 0);
+    Assert.eq(queue.current().unwrap(), "2");
+    Assert.eq(queue.tracks.length, 4);
+    for (let id in ids) {
+        Assert.is_true(queue.tracks.contains(id));
+    }
+    queue.toggle_shuffle();
+    Assert.eq(queue.current().unwrap(), "2");
+    for (let i = 0; i < ids.length; i = i + 1) {
+        Assert.eq(queue.tracks[i], ids[i]);
+    }
+}

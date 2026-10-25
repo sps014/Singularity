@@ -1,0 +1,100 @@
+import system;
+import system.collections;
+
+public class PlaybackQueue {
+    public tracks: List<string>;
+    public original: List<string>;
+    public index: int;
+    public shuffled: bool;
+
+    // 0: off, 1: entire queue, 2: current track.
+    public repeat_mode: int;
+
+    random: Random;
+
+    public constructor() {
+        this.tracks = List<string>();
+        this.original = List<string>();
+        this.index = 0;
+        this.shuffled = false;
+        this.repeat_mode = 0;
+        this.random = Random(72191u);
+    }
+
+    public fun current(): Option<string> {
+        if this.tracks.length == 0 {
+            return Option.None;
+        }
+        return Option.Some(this.tracks[this.index]);
+    }
+
+    public fun replace(ids: List<string>, selected: string): void {
+        this.tracks.clear();
+        this.original.clear();
+        this.index = 0;
+        for (let id in ids) {
+            this.tracks.push(id);
+            this.original.push(id);
+            if id == selected {
+                this.index = this.tracks.length - 1;
+            }
+        }
+        if this.shuffled {
+            this.shuffled = false;
+            this.toggle_shuffle();
+        }
+    }
+
+    public fun advance(direction: int, automatic: bool): Option<string> {
+        if this.tracks.length == 0 {
+            return Option.None;
+        }
+        if automatic && this.repeat_mode == 2 {
+            return this.current();
+        }
+        let next = this.index + direction;
+        if next >= this.tracks.length {
+            if this.repeat_mode == 0 && automatic {
+                return Option.None;
+            }
+            next = 0;
+        }
+        if next < 0 {
+            next = this.tracks.length - 1;
+        }
+        this.index = next;
+        return this.current();
+    }
+
+    public fun toggle_shuffle(): void {
+        let current = this.current();
+        this.shuffled = !this.shuffled;
+        if this.shuffled {
+            if current.is_some() {
+                let selected = this.index;
+                let first = this.tracks[0];
+                this.tracks[0] = this.tracks[selected];
+                this.tracks[selected] = first;
+            }
+            for (let i = this.tracks.length - 1; i > 0; i = i - 1) {
+                let j = 1 + this.random.next_int(i);
+                let saved = this.tracks[i];
+                this.tracks[i] = this.tracks[j];
+                this.tracks[j] = saved;
+            }
+        } else {
+            this.tracks.clear();
+            for (let id in this.original) {
+                this.tracks.push(id);
+            }
+        }
+        this.index = 0;
+        if current.is_some() {
+            for (let i = 0; i < this.tracks.length; i = i + 1) {
+                if this.tracks[i] == current.unwrap() {
+                    this.index = i;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,28 @@
+module singularity;
+
+import system;
+import state;
+import shell;
+import dom;
+import views;
+import player_view;
+import playback;
+import storage;
+import events;
+
+async fun main(): void {
+    render_shell();
+    restore_library();
+    make_transport(el("panel-controls"));
+    make_transport(el("bar-controls"));
+    render_view();
+    render_player();
+    let document = js.global.document;
+    document.addEventListener("click", on_click);
+    document.addEventListener("input", on_input);
+    document.addEventListener("change", on_change);
+    document.addEventListener("keydown", on_key);
+    el("editor-form").addEventListener("submit", on_submit);
+    js.global.addEventListener("pagehide", on_unload);
+    audio_loop().await;
+}

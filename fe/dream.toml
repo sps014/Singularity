@@ -1,0 +1,9 @@
+[package]
+name = "singularity"
+version = "0.1.0"
+type = "bin"
+entry = "src/main.dream"
+targets = ["web"]
+
+[dependencies]
+common = { path = "../common" }

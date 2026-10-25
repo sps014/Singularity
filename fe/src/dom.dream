@@ -1,0 +1,105 @@
+module singularity;
+
+import system;
+
+internal fun el(id: string): js {
+    return js.global.document.getElementById(id);
+}
+
+internal fun node(tag: string, class_name: string, text: string): js {
+    let result = js.global.document.createElement(tag);
+    result.className = class_name;
+    result.textContent = text;
+    return result;
+}
+
+internal fun icon(name: string): string {
+    let path = "";
+    switch (name) {
+        "play" => {
+            path = "<path d='m9 5 11 7-11 7z' fill='currentColor' stroke='none'/>";
+        },
+        "pause" => {
+            path = "<path d='M8 5v14M16 5v14' stroke-width='4'/>";
+        },
+        "next" => {
+            path = "<path d='m5 5 10 7-10 7z' fill='currentColor' stroke='none'/><path d='M19 5v14'/>";
+        },
+        "prev" => {
+            path = "<path d='m19 5-10 7 10 7z' fill='currentColor' stroke='none'/><path d='M5 5v14'/>";
+        },
+        "heart" => {
+            path = "<path d='M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z'/>";
+        },
+        "search" => {
+            path = "<circle cx='10.5' cy='10.5' r='6.5'/><path d='m16 16 5 5'/>";
+        },
+        "home" => {
+            path = "<path d='m3 10 9-7 9 7v10H3z'/><path d='M9 20v-7h6v7'/>";
+        },
+        "library" => {
+            path = "<path d='M4 4v16M9 4v16m5-16 6 15M3 20h19'/>";
+        },
+        "plus" => {
+            path = "<path d='M12 5v14M5 12h14'/>";
+        },
+        "arrow" => {
+            path = "<path d='M5 12h14m-5-5 5 5-5 5'/>";
+        },
+        "close" => {
+            path = "<path d='m6 6 12 12M6 18 18 6'/>";
+        },
+        "queue" => {
+            path = "<path d='M3 6h18M3 12h12M3 18h8m6-3 5 3-5 3z'/>";
+        },
+        "shuffle" => {
+            path = "<path d='M3 6h3c5 0 5 12 10 12h5m-4-4 4 4-4 4M3 18h3c2 0 3-2 4-4m3-4c1-2 2-4 4-4h4m-4-4 4 4-4 4'/>";
+        },
+        "repeat" => {
+            path = "<path d='m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-1v2a3 3 0 0 1-3 3H3'/>";
+        },
+        "volume" => {
+            path = "<path d='M4 9h4l5-4v14l-5-4H4zM17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14'/>";
+        },
+        "mute" => {
+            path = "<path d='M4 9h4l5-4v14l-5-4H4zm13 0 5 6m0-6-5 6'/>";
+        },
+        "edit" => {
+            path = "<path d='m16 3 5 5L9 20H4v-5zM13 6l5 5'/>";
+        },
+        "trash" => {
+            path = "<path d='M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7'/>";
+        },
+        _ => {
+            path = "<circle cx='12' cy='12' r='8'/><path d='M8 12h8M12 8v8'/>";
+        }
+    }
+    return "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>"
+        + path + "</svg>";
+}
+
+internal fun button(action: string, label: string, glyph: string, class_name: string): js {
+    let result = node("button", class_name, "");
+    result.type = "button";
+    result.setAttribute("data-action", action);
+    result.setAttribute("aria-label", label);
+    result.title = label;
+    if glyph != "" {
+        result.innerHTML = icon(glyph);
+    }
+    return result;
+}
+
+internal fun artwork(track_name: string, class_name: string): js {
+    let image = node("img", class_name, "");
+    image.src = "./assets/" + track_name + ".svg";
+    image.alt = "";
+    image.draggable = false;
+    return image;
+}
+
+internal fun clock(seconds: double): string {
+    let total = (int)(seconds < 0.0d ? 0.0d : seconds);
+    let remaining = total % 60;
+    return (total / 60).to_string() + ":" + (remaining < 10 ? "0" : "") + remaining.to_string();
+}
