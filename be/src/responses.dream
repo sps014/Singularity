@@ -1,0 +1,39 @@
+module singularity_api;
+
+import system;
+import system.json;
+import system.webapi;
+import youtube_explode;
+
+public fun api_error(code: string, message: string, status: int): HttpOutgoing {
+    let error = JsonValue.dict();
+    error["code"] = JsonValue.from_string(code);
+    error["message"] = JsonValue.from_string(message);
+    let body = JsonValue.dict();
+    body["error"] = error;
+    return HttpOutgoing.json_text(Json.serialize(body), status)
+        .set_header("Cache-Control", "no-store");
+}
+
+public fun upstream_error(error: YoutubeError): HttpOutgoing {
+    let code = error.code();
+    if code == "rate_limited" {
+        return api_error(code, "YouTube is rate limiting requests. Try again shortly.", 429)
+            .set_header("Retry-After", "30");
+    }
+    if code == "busy" {
+        return api_error(code, "The service is busy. Try again shortly.", 503)
+            .set_header("Retry-After", "2");
+    }
+    if code == "invalid_input" {
+        return api_error(code, "Invalid YouTube identifier or query.", 400);
+    }
+    if code == "unavailable" || code == "unplayable" || code == "purchase_required" {
+        return api_error(code, "This video has no available audio stream.", 422);
+    }
+    if code == "cancelled" {
+        return api_error(code, "Request cancelled.", 408);
+    }
+    // Upstream errors can contain signed URLs or credentials; never reflect their text.
+    return api_error(code, "YouTube could not complete this request. Please retry.", 502);
+}

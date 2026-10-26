@@ -1,6 +1,6 @@
 # Singularity
 
-A browser music player with dark acrylic surfaces, a responsive library and Dream-powered audio. The workspace has three source folders: `fe` for the browser app, `be` reserved for a future Dream backend, and `common` for browser-independent models and library rules.
+A browser music player with dark acrylic surfaces, a responsive library and Dream-powered audio. The workspace has three source folders: `fe` for the browser app, `be` for the native YouTube API, and `common` for browser-independent models and library rules.
 
 ## Run locally
 
@@ -12,13 +12,23 @@ git -C ../dream apply --check $patch
 git -C ../dream apply $patch
 ```
 
-Skip that step when your Dream checkout already includes the fix. Then build the current tools, especially on Windows where workspace installation uses directory junctions:
+Skip that step when your Dream checkout already includes the fix. The backend also needs the generator-depth, generic type-identity, cycle-analysis and browser diagnostic fixes bundled in `be/toolchain/dream-backend.patch`. Apply it once to an unpatched checkout:
+
+```powershell
+$patch = (Resolve-Path ./be/toolchain/dream-backend.patch).Path
+git -C ../dream apply --check $patch
+git -C ../dream apply $patch
+```
+
+Keep the `dream-packages` checkout beside this repository; `be/dream.toml` points to its `youtube_explode` package. Build the current tools after applying the patches:
 
 ```powershell
 cd ../dream
 cargo build --release -p dream -p dreamer
 cd ../singularity
 ./dev.ps1 install
+./dev.ps1 run -Service backend -Release
+# In a second terminal:
 ./dev.ps1 run
 ```
 
@@ -39,7 +49,7 @@ dreamer build -p singularity --release
 dreamer test --node
 ```
 
-The root `dream.toml` registers `fe` and `common`, with a path dependency and one shared lockfile. Generated WASM and the selective browser runtime live in `fe/target/web`; keep the `fe` directory as the web server root. Opening `index.html` directly from disk is unsupported.
+The root `dream.toml` registers `fe`, `be` and `common`, with path dependencies and one shared lockfile. Generated WASM and the selective browser runtime live in `fe/target/web`; keep the `fe` directory as the web server root. Opening `index.html` directly from disk is unsupported.
 
 ## Use the player
 
@@ -55,7 +65,7 @@ Likes and playlists are saved under `singularity.library.v1` in this browser's l
 - `fe/src`: state, DOM utilities, shell, browsing views, player rendering, events, storage and audio coordination. Dream generates the interface and uses `system.audio.Audio` for all playback.
 - `fe/styles`: design tokens, responsive layout and components. `fe/assets` contains original SVG artwork, bundled locally.
 - `fe/bootstrap.js`: WASM loading and a small storage exception/syntax boundary. Dream's dynamic JS interop cannot catch browser storage exceptions, so this boundary returns explicit success/failure values and rejects malformed JSON before it reaches the Dream parser. Serialization, schema validation and library recovery remain in Dream.
-- `be`: add a Dream package manifest and root workspace membership when backend work starts. Shared models can be imported from `common` without browser dependencies.
+- `be/src`: native `system.webapi` routes, YouTube service, bounded caches, audio range handling and tests. See [backend documentation](be/README.md) for endpoints, configuration and resource limits.
 
 ## Demo audio
 
@@ -65,4 +75,4 @@ All four demo URLs were verified for CORS and HTTP byte-range responses, includi
 
 The local Dream checkout includes a small JS-marshaling fix required by cancellable audio operations: synthetic future types without object layouts are excluded from generated marshalers. The fix and its regression test are included in `fe/toolchain/dream-js-marshal.patch`; the policy lives in `crates/dream-mir/src/backend/shared/js_marshal.rs` in the sibling Dream repository.
 
-This version has no backend, uploads, external search provider, account system or audio visualization.
+Search now queries YouTube through the native backend, with a 350 ms debounce, stale-request cancellation and pagination. Liked and playlist tracks retain their metadata across reloads. Accounts, cloud synchronization, uploads, transcoding and audio visualization remain outside this version.

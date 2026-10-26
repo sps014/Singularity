@@ -1,0 +1,45 @@
+module singularity_api;
+
+import routes;
+import service;
+import system;
+import system.webapi;
+
+async fun main(): void {
+    let port = int.parse(System.env("SINGULARITY_PORT").unwrap_or("8792"));
+    if port.is_err() || port.unwrap() < 1 || port.unwrap() > 65535 {
+        System.println("SINGULARITY_PORT must be between 1 and 65535.");
+        return;
+    }
+    let host = System.env("SINGULARITY_HOST").unwrap_or("127.0.0.1");
+    let app = WebApp(
+        WebAppOptions(
+            title: "Singularity Music API",
+            description: "YouTube search, metadata and seekable audio"
+        )
+    );
+    app.include_router(MusicRoutes.router()).unwrap();
+    app.use(
+        Cors.middleware(
+            CorsOptions(
+                allow_origins: System.env("SINGULARITY_ORIGINS")
+                    .unwrap_or("http://127.0.0.1:8791,http://localhost:8791"),
+                allow_methods: "GET,HEAD,OPTIONS",
+                allow_headers: "Range,Content-Type",
+                expose_headers: "Content-Range,Content-Length,Accept-Ranges,Retry-After"
+            )
+        )
+    ).unwrap();
+    System.println("Singularity API: http://" + host + ":" + port.unwrap().to_string() + "/docs");
+    let config = ServerConfig(
+        limit_concurrency: 64,
+        timeout_graceful_shutdown_ms: 5000,
+        proxy_headers: false
+    );
+    let result = app.run(host, port.unwrap(), config).await;
+    if result.is_err() {
+        System.println("API could not start: " + result.unwrap_err().message());
+        return;
+    }
+    music().client.close();
+}

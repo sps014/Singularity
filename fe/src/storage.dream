@@ -1,9 +1,11 @@
 module singularity;
 
 import common;
+
 import state;
 import system;
 import system.json;
+import api;
 
 internal fun restore_library(): void {
     let app = state();
@@ -34,11 +36,30 @@ internal fun restore_library(): void {
         return;
     }
     let root = parsed.unwrap();
-    if !root.is_object() || root["version"].as_int().unwrap_or(0) != 1 {
+    if !root.is_object()
+        || root.get("version")
+        .unwrap_or(JsonValue.null())
+        .as_int()
+        .unwrap_or(0) != 1 {
         app.notice = "This saved library format is unsupported. A new local library is ready.";
         return;
     }
-    let likes = root["liked"].as_array();
+    let saved_tracks = root.get("catalog").unwrap_or(JsonValue.null()).as_array();
+    if saved_tracks.is_some() {
+        for (let value in saved_tracks.unwrap()) {
+            let decoded = Json.deserialize<Track>(Json.serialize(value));
+            if decoded.is_ok() {
+                let track = decoded.unwrap();
+                if track.id.starts_with("yt:") && track.id.length == 14 {
+                    let id = track.id.substring(3, track.id.length);
+                    track.url = api_origin() + "/api/audio/" + id;
+                    track.artwork = "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg";
+                    remember_track(track);
+                }
+            }
+        }
+    }
+    let likes = root.get("liked").unwrap_or(JsonValue.null()).as_array();
     if likes.is_some() {
         for (let item in likes.unwrap()) {
             let id = item.as_string().unwrap_or("");
@@ -47,16 +68,16 @@ internal fun restore_library(): void {
             }
         }
     }
-    let playlists = root["playlists"].as_array();
+    let playlists = root.get("playlists").unwrap_or(JsonValue.null()).as_array();
     if playlists.is_some() {
         for (let item in playlists.unwrap()) {
-            let id = item["id"].as_string().unwrap_or("");
-            let name = item["name"].as_string().unwrap_or("").trim();
+            let id = item.get("id").unwrap_or(JsonValue.null()).as_string().unwrap_or("");
+            let name = item.get("name").unwrap_or(JsonValue.null()).as_string().unwrap_or("").trim();
             if id.starts_with("playlist-")
                 && id.length <= 128 && name != "" && app.library.find_playlist(id)
                 .is_none() {
                 let playlist = Playlist(id, name);
-                let tracks = item["tracks"].as_array();
+                let tracks = item.get("tracks").unwrap_or(JsonValue.null()).as_array();
                 if tracks.is_some() {
                     for (let entry in tracks.unwrap()) {
                         let track_id = entry.as_string().unwrap_or("");
@@ -75,6 +96,19 @@ internal fun persist_library(): void {
     let app = state();
     let root = JsonValue.dict();
     root["version"] = JsonValue.from_int(1);
+    let catalog = JsonValue.array();
+    for (let track in app.catalog) {
+        let saved = app.library.liked.contains(track.id);
+        for (let playlist in app.library.playlists) {
+            if playlist.tracks.contains(track.id) {
+                saved = true;
+            }
+        }
+        if saved && track.id.starts_with("yt:") {
+            catalog.push(Json.deserialize<JsonValue>(Json.serialize(track)).unwrap());
+        }
+    }
+    root["catalog"] = catalog;
     let likes = JsonValue.array();
     for (let id in app.library.liked) {
         likes.push(JsonValue.from_string(id));

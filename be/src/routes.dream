@@ -1,0 +1,77 @@
+module singularity_api;
+
+import common;
+import common.demo_catalog as demo_catalog;
+
+import service;
+import responses;
+import audio;
+import system;
+import system.json;
+import system.webapi;
+import youtube_explode;
+
+@router("/api")
+public class MusicRoutes {
+    @get("/health")
+    public static fun health(): HttpOutgoing {
+        return HttpOutgoing.json_text("{\"status\":\"ok\",\"service\":\"singularity\"}");
+    }
+
+    @get("/catalog")
+    public static fun catalog(): HttpOutgoing {
+        let tracks = JsonValue.array();
+        for (let track in demo_catalog()) {
+            tracks.push(track_value(track));
+        }
+        return HttpOutgoing.json_text(Json.serialize(tracks))
+            .set_header("Cache-Control", "public, max-age=3600");
+    }
+
+    @get("/search")
+    public static async fun search(
+        ctx: RequestContext,
+        @query q: string,
+        @query continuation: Option<string>
+    ): HttpOutgoing {
+        let query = q.trim();
+        if query.length < 2 || query.length > 200 || continuation.unwrap_or("").length > 8192 {
+            return api_error(
+                "invalid_input",
+                "Search needs 2–200 characters and a valid continuation token.",
+                400
+            );
+        }
+        let result = music().search(query, continuation, ctx.cancellation_token).await;
+        if result.is_err() {
+            return upstream_error(result.unwrap_err());
+        }
+        return HttpOutgoing.json_text(result.unwrap())
+            .set_header("Cache-Control", "private, max-age=30");
+    }
+
+    @get("/tracks/{id}")
+    public static async fun track(ctx: RequestContext, @path id: string): HttpOutgoing {
+        let parsed = VideoId.parse(id);
+        if parsed.is_err() {
+            return api_error("invalid_input", "Invalid YouTube video ID.", 400);
+        }
+        let result = music().video(parsed.unwrap(), ctx.cancellation_token).await;
+        return result.is_err()
+            ? upstream_error(result.unwrap_err()) : HttpOutgoing.json_text(result.unwrap());
+    }
+
+    @get("/audio/{id}")
+    public static async fun audio(ctx: RequestContext, @path id: string): HttpOutgoing {
+        let parsed = VideoId.parse(id);
+        if parsed.is_err() {
+            return api_error("invalid_input", "Invalid YouTube video ID.", 400);
+        }
+        return audio_response(parsed.unwrap(), ctx.incoming, ctx.cancellation_token).await;
+    }
+
+    @head("/audio/{id}")
+    public static async fun audio_head(ctx: RequestContext, @path id: string): HttpOutgoing {
+        return MusicRoutes.audio(ctx, id).await;
+    }
+}

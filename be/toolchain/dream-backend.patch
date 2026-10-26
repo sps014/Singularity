@@ -1,0 +1,534 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 5ac0842e..bfc3c700 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -138,6 +138,15 @@ version = "1.0.102"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
+
++[[package]]
++name = "ar_archive_writer"
++version = "0.5.3"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "73cd58deff2140a0a8eae87e417bd01db68a33e148aa93d1e8cd837e55e312b6"
++dependencies = [
++ "object 0.39.1",
++]
++
+ [[package]]
+ name = "arbitrary"
+ version = "1.4.2"
+@@ -1053,7 +1062,7 @@ dependencies = [
+  "libc",
+  "libloading",
+  "logos 0.16.1",
+- "object",
++ "object 0.37.3",
+  "oxc_allocator",
+  "oxc_ast",
+  "oxc_codegen",
+@@ -1067,6 +1076,7 @@ dependencies = [
+  "rcgen",
+  "serde",
+  "serde_json",
++ "serde_stacker",
+  "tempfile",
+  "tokio",
+  "tokio-tungstenite",
+@@ -1394,7 +1404,7 @@ dependencies = [
+  "image",
+  "junction",
+  "lzma-rs",
+- "object",
++ "object 0.37.3",
+  "semver",
+  "serde",
+  "serde_json",
+@@ -2799,6 +2809,15 @@ dependencies = [
+  "memchr",
+ ]
+
++[[package]]
++name = "object"
++version = "0.39.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "2e5a6c098c7a3b6547378093f5cc30bc54fd361ce711e05293a5cc589562739b"
++dependencies = [
++ "memchr",
++]
++
+ [[package]]
+ name = "oid-registry"
+ version = "0.8.1"
+@@ -3587,6 +3606,16 @@ version = "2.0.11"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "33cb294fe86a74cbcf50d4445b37da762029549ebeea341421c7c70370f86cac"
+
++[[package]]
++name = "psm"
++version = "0.1.32"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "4dcd034599e63b970727f70d79e02d62390a4a84f7c6b827c27c46d5ac3fa622"
++dependencies = [
++ "ar_archive_writer",
++ "cc",
++]
++
+ [[package]]
+ name = "publicsuffix"
+ version = "2.3.0"
+@@ -4360,6 +4389,17 @@ dependencies = [
+  "serde",
+ ]
+
++[[package]]
++name = "serde_stacker"
++version = "0.1.14"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d4936375d50c4be7eff22293a9344f8e46f323ed2b3c243e52f89138d9bb0f4a"
++dependencies = [
++ "serde",
++ "serde_core",
++ "stacker",
++]
++
+ [[package]]
+ name = "serde_urlencoded"
+ version = "0.7.1"
+@@ -4555,6 +4595,19 @@ version = "1.2.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
++[[package]]
++name = "stacker"
++version = "0.1.25"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "707f49d46706bacf8a2b00d51dace3f9de527c13eec3778f570c411f89e69967"
++dependencies = [
++ "cc",
++ "cfg-if",
++ "libc",
++ "psm",
++ "windows-sys 0.61.2",
++]
++
+ [[package]]
+ name = "static_assertions"
+ version = "1.1.0"
+diff --git a/Cargo.toml b/Cargo.toml
+index 713f690d..cc2aed61 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -51,7 +51,8 @@ tracing-subscriber = "0.3.23"
+ # CLI parsing + auto-generated help for the `dream` binary (same crate `dreamer` uses).
+ clap = { version = "4", features = ["derive", "env"] }
+ serde = { version = "1", features = ["derive"] }
+-serde_json = "1"
++serde_json = { version = "1", features = ["unbounded_depth"] }
++serde_stacker = "0.1"
+ base64 = "0.22"
+ tempfile = { version = "3", optional = true }
+ image = { version = "0.25", default-features = false, features = ["png", "jpeg", "ico"], optional = true }
+diff --git a/crates/dream-sema/src/analyzer/cycles/summary.rs b/crates/dream-sema/src/analyzer/cycles/summary.rs
+index e95b5cd6..5d939070 100644
+--- a/crates/dream-sema/src/analyzer/cycles/summary.rs
++++ b/crates/dream-sema/src/analyzer/cycles/summary.rs
+@@ -61,7 +61,7 @@ pub(super) struct FreshGroup {
+
+ pub(super) const PRIVATE: usize = 0;
+ pub(super) const SHARED: usize = 1;
+-/// Bounds the caller sites one call creates.
++/// Holder-sensitive groups per call; additional groups retain types without holder precision.
+ pub(super) const MAX_GROUPS: usize = 64;
+
+ #[derive(Clone, Default, PartialEq, Debug)]
+@@ -87,7 +87,12 @@ impl Summary {
+     /// Renames the walk's allocation sites to the groups callers see. `coarse` groups only by
+     /// escape and return, which keeps the groups of a recursive fixpoint from trading objects
+     /// every round.
+-    pub(super) fn finish(mut self, exit: &State, coarse: bool) -> Summary {
++    pub(super) fn finish(
++        mut self,
++        exit: &State,
++        coarse: bool,
++        managed: impl Fn(TypeId) -> bool,
++    ) -> Summary {
+         // Objects stored into different caller objects (say the new storage of two maps) stay
+         // apart, so callers do not see one caller object holding the other's contents.
+         let mut holders: Vec<Atoms> = vec![Atoms::new(); exit.sites.len()];
+@@ -116,16 +121,30 @@ impl Summary {
+                     return base;
+                 }
+                 let returned = self.ret.contains(&Atom::Fresh(id as u32));
+-                let types: &[TypeId] = if coarse { &[] } else { site.types.as_slice() };
+-                let key = (escaped, returned, types, holders[id].as_slice());
++                // Managed objects are barriers in reachability proofs. Merging them with
++                // arbitrary overflow allocations erases that barrier and invents cycles.
++                let managed = !site.types.is_empty() && site.types.iter().all(|&ty| managed(ty));
++                let types: &[TypeId] = if coarse && !managed {
++                    &[]
++                } else {
++                    site.types.as_slice()
++                };
++                // Once the holder budget is exhausted, retain type identity. Folding all
++                // overflow objects into PRIVATE/SHARED invents edges between unrelated
++                // allocations, including a server's request storage and its futures.
++                let holder_set = if keys.len() + 2 < MAX_GROUPS {
++                    holders[id].as_slice()
++                } else {
++                    &[]
++                };
++                let key = (escaped, returned, types, holder_set);
+                 let next = keys.len() + 2;
+                 match keys.get(&key) {
+                     Some(&at) => at,
+-                    None if next < MAX_GROUPS => {
++                    None => {
+                         keys.insert(key, next);
+                         next
+                     }
+-                    None => base,
+                 }
+             })
+             .collect();
+@@ -308,3 +327,50 @@ pub(super) struct Finding {
+     pub(super) file: Option<String>,
+     pub(super) line: u32,
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn overflowing_holder_budget_keeps_allocation_types_distinct() {
++        let mut state = State::default();
++        for id in 0..100 {
++            let site = state.site_mut(id);
++            site.live = true;
++            site.set_types(true, &[TypeId(id)]);
++        }
++        let summary = Summary {
++            ret: super::super::value::one(Atom::Fresh(99)),
++            ..Default::default()
++        }
++        .finish(&state, false, |_| false);
++        assert!(
++            summary
++                .fresh
++                .iter()
++                .all(|group| !group.allocates || (group.typed && group.types.len() == 1))
++        );
++        let Atom::Fresh(last) = summary.ret[0] else {
++            panic!("expected allocation");
++        };
++        assert_eq!(summary.fresh[last as usize].types.as_slice(), &[TypeId(99)]);
++    }
++
++    #[test]
++    fn coarse_summaries_preserve_managed_type_barriers() {
++        let mut state = State::default();
++        for id in 0..3 {
++            let site = state.site_mut(id);
++            site.live = true;
++            site.set_types(true, &[TypeId(id)]);
++        }
++        let summary = Summary::default().finish(&state, true, |ty| ty == TypeId(2));
++        assert!(
++            summary
++                .fresh
++                .iter()
++                .any(|group| group.typed && group.types.as_slice() == [TypeId(2)])
++        );
++    }
++}
+diff --git a/crates/dream-sema/src/analyzer/cycles/walker.rs b/crates/dream-sema/src/analyzer/cycles/walker.rs
+index 9b0af487..f59eebd4 100644
+--- a/crates/dream-sema/src/analyzer/cycles/walker.rs
++++ b/crates/dream-sema/src/analyzer/cycles/walker.rs
+@@ -7,9 +7,7 @@
+ use super::program::Program;
+ use super::state::State;
+ use super::summary::{Finding, MAX_WRITES, Origin, PRECISE_WRITES, Summary};
+-use super::value::{
+-    Atom, Atoms, PathId, Paths, Slot, frame_slot, insert, one, result_slot, union,
+-};
++use super::value::{Atom, Atoms, PathId, Paths, Slot, frame_slot, insert, one, result_slot, union};
+ use dream_hir::{HExpr, HFunction, HGlobal, ParamMode};
+ use dream_types::{TyKind, TypeId};
+ use indexmap::{IndexMap, IndexSet};
+@@ -150,7 +148,10 @@ impl<'p, 'a> Walker<'p, 'a> {
+             }
+             w.summary.ret = one(Atom::Fresh(future));
+         }
+-        let mut summary = std::mem::take(&mut w.summary).finish(&exit, coarse);
++        let mut summary = std::mem::take(&mut w.summary).finish(&exit, coarse, |ty| {
++            matches!(prog.graph.interner().kind(ty),
++                TyKind::Struct(def, _) if prog.managed.contains(def))
++        });
+         let mut findings: Vec<Finding> = w.findings.into_iter().collect();
+         if coarse || summary.writes.len() > PRECISE_WRITES {
+             summary.coarsen();
+@@ -338,8 +339,13 @@ impl<'p, 'a> Walker<'p, 'a> {
+     pub(super) fn suspend(&mut self) {
+         self.wrote_all();
+         self.state.reattach(|_| true);
+-        self.state
+-            .alias(&self.prog.graph, self.paths, None, &[Atom::Old], &[Atom::Old]);
++        self.state.alias(
++            &self.prog.graph,
++            self.paths,
++            None,
++            &[Atom::Old],
++            &[Atom::Old],
++        );
+         for site in &mut self.state.sites {
+             if site.escaped {
+                 site.lost = true;
+diff --git a/crates/dream-sema/src/analyzer/switch_unions/variant_construction.rs b/crates/dream-sema/src/analyzer/switch_unions/variant_construction.rs
+index 72de161f..da460f7d 100644
+--- a/crates/dream-sema/src/analyzer/switch_unions/variant_construction.rs
++++ b/crates/dream-sema/src/analyzer/switch_unions/variant_construction.rs
+@@ -197,6 +197,15 @@ impl<'a> Analyzer<'a> {
+             }
+         };
+
++        // Expected arguments are written in the caller's lexical scope. Preserve nominal
++        // identities before resolving the template's payload in its own module.
++        let concrete_args: Vec<Type> = concrete_args
++            .iter()
++            .map(|arg| {
++                let ty = self.type_ctx.lower(arg);
++                self.type_ctx.syntax_type(ty)
++            })
++            .collect();
+         let bindings = generic_bindings(
+             template.generic_parameters.as_deref().unwrap_or(&[]),
+             &concrete_args,
+diff --git a/runtime/dream.js b/runtime/dream.js
+index 8c986780..28c691f7 100644
+--- a/runtime/dream.js
++++ b/runtime/dream.js
+@@ -1021,7 +1021,7 @@ function defaultEnv(getInstance, options) {
+       try {
+         if (!callback && fs) return fs.writeSync(stream, bytes, 0, count);
+         const decoder = stream === 2 ? stderrBytes : stdoutBytes;
+-        const text = decoder.decode(bytes, { stream: true });
++        const text = decoder.decode(bytes.slice(), { stream: true });
+         if (text) (stream === 2 ? writeErrRaw : writeOutRaw)(text);
+         return count;
+       } catch (_) { return -1; }
+@@ -1037,7 +1037,8 @@ function defaultEnv(getInstance, options) {
+     write_text: (stream, ptr, size, encoding) => {
+       const start = ptr >>> 0;
+       const length = (size >>> 0) * (encoding === 1 ? 2 : 1);
+-      const text = (encoding === 1 ? utf16 : utf8).decode(getInstance().bytes.subarray(start, start + length));
++      // Browser TextDecoder rejects views backed by shared WASM memory.
++      const text = (encoding === 1 ? utf16 : utf8).decode(getInstance().bytes.slice(start, start + length));
+       (stream === 2 ? writeErr : writeOut)(text);
+     },
+     print_string: (ptr) => writeOut(getInstance().readString(ptr)),
+diff --git a/runtime/src/hosts/env.js b/runtime/src/hosts/env.js
+index 7b03f98a..18958630 100644
+--- a/runtime/src/hosts/env.js
++++ b/runtime/src/hosts/env.js
+@@ -73,7 +73,7 @@ function defaultEnv(getInstance, options) {
+       try {
+         if (!callback && fs) return fs.writeSync(stream, bytes, 0, count);
+         const decoder = stream === 2 ? stderrBytes : stdoutBytes;
+-        const text = decoder.decode(bytes, { stream: true });
++        const text = decoder.decode(bytes.slice(), { stream: true });
+         if (text) (stream === 2 ? writeErrRaw : writeOutRaw)(text);
+         return count;
+       } catch (_) { return -1; }
+@@ -89,7 +89,8 @@ function defaultEnv(getInstance, options) {
+     write_text: (stream, ptr, size, encoding) => {
+       const start = ptr >>> 0;
+       const length = (size >>> 0) * (encoding === 1 ? 2 : 1);
+-      const text = (encoding === 1 ? utf16 : utf8).decode(getInstance().bytes.subarray(start, start + length));
++      // Browser TextDecoder rejects views backed by shared WASM memory.
++      const text = (encoding === 1 ? utf16 : utf8).decode(getInstance().bytes.slice(start, start + length));
+       (stream === 2 ? writeErr : writeOut)(text);
+     },
+     print_string: (ptr) => writeOut(getInstance().readString(ptr)),
+diff --git a/src/driver/generate/commands.rs b/src/driver/generate/commands.rs
+index daa1f7ec..a81a2256 100644
+--- a/src/driver/generate/commands.rs
++++ b/src/driver/generate/commands.rs
+@@ -345,7 +345,7 @@ pub fn replay(config: &Arc<ToolchainConfig>, dir: &Path) -> Result<String, Strin
+         bin: meta.bin.clone(),
+     };
+     let decoded: super::model::Snapshot =
+-        serde_json::from_str(&snapshot).map_err(|e| e.to_string())?;
++        super::model::Snapshot::decode(&snapshot).map_err(|e| e.to_string())?;
+     let declared: Vec<_> = decoded.tools.iter().map(|t| t.name.clone()).collect();
+     let result = super::phases::run(
+         config,
+diff --git a/src/driver/generate/model.rs b/src/driver/generate/model.rs
+index 551f9c59..cbbd8ad1 100644
+--- a/src/driver/generate/model.rs
++++ b/src/driver/generate/model.rs
+@@ -38,6 +38,48 @@ pub struct Snapshot {
+     pub calls: Vec<CallSite>,
+ }
+
++impl Snapshot {
++    pub fn decode(json: &str) -> Result<Self, serde_json::Error> {
++        // Syntax snapshots contain source-shaped expression trees, whose valid depth can
++        // exceed JSON's default limit (for example generated HTML entity tables).
++        let mut decoder = serde_json::Deserializer::from_str(json);
++        decoder.disable_recursion_limit();
++        let snapshot = Self::deserialize(serde_stacker::Deserializer::new(&mut decoder))?;
++        decoder.end()?;
++        Ok(snapshot)
++    }
++}
++
++#[cfg(test)]
++mod snapshot_decode_tests {
++    use super::{Body, BodyNode, Function, Snapshot};
++
++    #[test]
++    fn accepts_deep_source_expressions_and_rejects_trailing_input() {
++        let mut node = BodyNode::default();
++        for _ in 0..180 {
++            node = BodyNode {
++                kind: "binary".into(),
++                children: vec![node],
++                ..Default::default()
++            };
++        }
++        let snapshot = Snapshot {
++            functions: vec![Function {
++                body: Some(Body {
++                    statements: vec![node],
++                }),
++                ..Default::default()
++            }],
++            ..Default::default()
++        };
++        let json = serde_json::to_string(&snapshot).unwrap();
++        assert!(serde_json::from_str::<Snapshot>(&json).is_err());
++        assert_eq!(Snapshot::decode(&json).unwrap(), snapshot);
++        assert!(Snapshot::decode(&(json + " null")).is_err());
++    }
++}
++
+ #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+ pub struct AdditionalFile {
+     pub path: String,
+diff --git a/src/driver/generate/phases.rs b/src/driver/generate/phases.rs
+index 47b55517..28819439 100644
+--- a/src/driver/generate/phases.rs
++++ b/src/driver/generate/phases.rs
+@@ -16,7 +16,7 @@ pub(super) fn run(
+     root: &std::path::Path,
+ ) -> Result<GenResult, String> {
+     let mut snapshot: super::model::Snapshot =
+-        serde_json::from_str(json).map_err(|e| e.to_string())?;
++        super::model::Snapshot::decode(json).map_err(|e| e.to_string())?;
+     let mut aggregate = GenResult {
+         version: snapshot.version,
+         generator: snapshot.generator_id.clone(),
+diff --git a/tests/cases/helpers/module_receiver_a.dream b/tests/cases/helpers/module_receiver_a.dream
+index eb8923c2..065070fa 100644
+--- a/tests/cases/helpers/module_receiver_a.dream
++++ b/tests/cases/helpers/module_receiver_a.dream
+@@ -8,6 +8,10 @@ public sealed class Counter {
+
+ public enum Payload { Value(Counter), Empty }
+
++public fun first_result(): Result<Counter, string> {
++    return Result.Ok(Counter(23));
++}
++
+ public fun first_counter(): int {
+     let payload = Payload.Value(Counter(10));
+     switch (payload) {
+diff --git a/tests/cases/helpers/module_receiver_b.dream b/tests/cases/helpers/module_receiver_b.dream
+index 957acd8f..f30d48ea 100644
+--- a/tests/cases/helpers/module_receiver_b.dream
++++ b/tests/cases/helpers/module_receiver_b.dream
+@@ -1,5 +1,9 @@
+ module receivers.b;
+
++public fun second_result(): Result<Counter, string> {
++    return Result.Ok(Counter("qualified"));
++}
++
+ public class Counter {
+     public value: string;
+     public constructor(value: string) { this.value = value; }
+diff --git a/tests/cases/module_receiver_identity.dream b/tests/cases/module_receiver_identity.dream
+index 6aa7f376..780f7105 100644
+--- a/tests/cases/module_receiver_identity.dream
++++ b/tests/cases/module_receiver_identity.dream
+@@ -2,6 +2,7 @@
+ // generic arguments; `internal` members are reachable module-wide; `public` declarations from a
+ // module-less file are usable from another file.
+ import system;
++import system.testing;
+ import helpers.module_receiver_a;
+ import helpers.module_receiver_b;
+ import helpers.module_users_a;
+@@ -11,6 +12,8 @@ import helpers.module_internal_member_partner;
+ import helpers.vis_lib;
+
+ fun main(): void {
++    Assert.eq(first_result().unwrap().value, 23);
++    Assert.eq(second_result().unwrap().value, "qualified");
+     System.println(first_counter());
+     System.println(second_counter());
+     System.println(first_user_value());
+diff --git a/tests/runtime_wasi_platform.rs b/tests/runtime_wasi_platform.rs
+index 20202549..dc0437d6 100644
+--- a/tests/runtime_wasi_platform.rs
++++ b/tests/runtime_wasi_platform.rs
+@@ -3,6 +3,47 @@
+ use std::fs;
+ use std::process::Command;
+
++#[test]
++fn browser_diagnostics_decode_shared_memory_through_owned_bytes() {
++    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
++    let script = r#"
++const fs = require('node:fs');
++const assert = require('node:assert/strict');
++const source = fs.readFileSync(process.argv[1], 'utf8').split('\n').slice(1).join('\n');
++class BrowserDecoder extends TextDecoder {
++  decode(input, options) {
++    if (input && input.buffer instanceof SharedArrayBuffer) throw new TypeError('shared input');
++    return super.decode(input, options);
++  }
++}
++const factory = new Function('getNodeFs', 'TextDecoder', source + '; return defaultEnv;')(() => null, BrowserDecoder);
++const bytes = new Uint8Array(new SharedArrayBuffer(64));
++const out = [], err = [];
++const env = factory(() => ({bytes}), {stdout: text => out.push(text), stderr: text => err.push(text)});
++bytes.set(new TextEncoder().encode('hello'));
++env.write_text(1, 0, 5, 0);
++bytes.set([0xAC, 0x20]);
++env.write_text(2, 0, 1, 1);
++bytes.set([0xF0, 0x9F, 0x8E, 0xB5]);
++assert.equal(env.console_write_bytes(1, 0, 2), 2);
++assert.equal(env.console_write_bytes(1, 2, 2), 2);
++env.console_flush_stream(1);
++assert.equal(out.join(''), 'hello🎵');
++assert.equal(err.join(''), '€');
++"#;
++    let output = Command::new("node")
++        .arg("-e")
++        .arg(script)
++        .arg(root.join("runtime/src/hosts/env.js"))
++        .output()
++        .unwrap();
++    assert!(
++        output.status.success(),
++        "{}",
++        String::from_utf8_lossy(&output.stderr)
++    );
++}
++
+ #[test]
+ fn release_guest_resolves_synthesized_libc_calls_internally() {
+     let temporary = tempfile::tempdir().unwrap();

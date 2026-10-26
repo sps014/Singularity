@@ -1,4 +1,11 @@
 import common;
+import common.Playlist as Playlist;
+import common.Library as Library;
+import common.PlaybackQueue as PlaybackQueue;
+import common.demo_catalog as demo_catalog;
+import common.search_tracks as search_tracks;
+import common.search_playlists as search_playlists;
+
 import system;
 import system.collections;
 import system.testing;

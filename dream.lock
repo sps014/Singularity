@@ -5,3 +5,24 @@ name = "common"
 version = "0.1.0"
 source = 'path+\\?\C:\Users\shive\OneDrive\Desktop\projects\singularity\common'
 dependencies = []
+
+[[package]]
+name = "markup"
+version = "0.1.0"
+source = 'path+\\?\C:\Users\shive\OneDrive\Desktop\projects\dream-packages\markup'
+dependencies = []
+
+[[package]]
+name = "sha1"
+version = "0.1.0"
+source = 'path+\\?\C:\Users\shive\OneDrive\Desktop\projects\dream-packages\sha1'
+dependencies = []
+
+[[package]]
+name = "youtube_explode"
+version = "0.1.0"
+source = 'path+\\?\C:\Users\shive\OneDrive\Desktop\projects\dream-packages\youtube_explode'
+dependencies = [
+    "markup 0.1.0",
+    "sha1 0.1.0",
+]

@@ -1,0 +1,58 @@
+module singularity_api;
+
+import system;
+import system.collections;
+
+public class CacheEntry<T> {
+    public value: T;
+    public expires: long;
+
+    public constructor(value: T, expires: long) {
+        this.value = value;
+        this.expires = expires;
+    }
+}
+
+/// Bounded FIFO cache. Accessed only on WebApp's cooperative request scheduler.
+public class Cache<T> {
+    values: Map<string, CacheEntry<T>>;
+    order: List<string>;
+    capacity: int;
+    ttl_ms: long;
+
+    public constructor(capacity: int, ttl_ms: long) {
+        this.values = Map<string, CacheEntry<T>>();
+        this.order = List<string>();
+        this.capacity = capacity;
+        this.ttl_ms = ttl_ms;
+    }
+
+    public fun get(key: string, now: long): Option<T> {
+        let entry = this.values.get(key);
+        if entry.is_none() {
+            return Option.None;
+        }
+        if entry.unwrap().expires <= now {
+            this.remove(key);
+            return Option.None;
+        }
+        return Option.Some(entry.unwrap().value);
+    }
+
+    public fun remove(key: string): void {
+        this.values.remove(key);
+        this.order.remove(key);
+    }
+
+    public fun put(key: string, value: T, now: long): void {
+        this.remove(key);
+        if this.capacity <= 0 || this.ttl_ms <= 0L {
+            return;
+        }
+        while this.order.length >= this.capacity {
+            this.remove(this.order[0]);
+        }
+        this.values[key] = CacheEntry<T>(value, now + this.ttl_ms);
+        this.order.push(key);
+    }
+}

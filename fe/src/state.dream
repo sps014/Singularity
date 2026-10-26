@@ -1,6 +1,15 @@
 module singularity;
 
 import common;
+import common.Track as Track;
+import common.Playlist as Playlist;
+import common.Library as Library;
+import common.PlaybackQueue as PlaybackQueue;
+import common.demo_catalog as demo_catalog;
+import common.find_track as find_track;
+import common.search_tracks as search_tracks;
+import common.search_playlists as search_playlists;
+
 import system;
 import system.audio;
 import system.collections;
@@ -20,6 +29,11 @@ public class AppState {
     public failed: bool;
     public alive: bool;
     public scrubbing: string;
+    public search_results: List<Track>;
+    public search_generation: int;
+    public searching: bool;
+    public continuation: string;
+    public search_error: string;
 
     public constructor() {
         this.catalog = demo_catalog();
@@ -37,6 +51,11 @@ public class AppState {
         this.failed = false;
         this.alive = true;
         this.scrubbing = "";
+        this.search_results = List<Track>();
+        this.search_generation = 0;
+        this.searching = false;
+        this.continuation = "";
+        this.search_error = "";
     }
 }
 
@@ -50,6 +69,11 @@ internal fun visible_tracks(): List<Track> {
     let app = state();
     let matches = search_tracks(app.catalog, app.query);
     let result = List<Track>();
+    if app.view == "search" {
+        for (let track in app.search_results) {
+            result.push(track);
+        }
+    }
     let playlist = app.library.find_playlist(app.view);
     for (let track in matches) {
         let include = true;
@@ -57,10 +81,14 @@ internal fun visible_tracks(): List<Track> {
             include = app.library.liked.contains(track.id);
         } else if playlist.is_some() {
             include = playlist.unwrap().tracks.contains(track.id);
-        } else if app.view == "browse" && app.mood != "All sounds" {
-            include = track.mood == app.mood;
+        } else if app.view == "browse" {
+            include = !track.id.starts_with("yt:")
+                && (app.mood == "All sounds" || track.mood == app.mood);
         }
         if include {
+            if app.view == "search" && track.id.starts_with("yt:") {
+                continue;
+            }
             result.push(track);
         }
     }

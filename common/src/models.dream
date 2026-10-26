@@ -1,6 +1,10 @@
+module common;
+
 import system;
 import system.collections;
+import system.json;
 
+@json
 public class Track {
     public id: string;
     public title: string;
@@ -27,6 +31,18 @@ public class Track {
         this.artwork = artwork;
         this.mood = mood;
     }
+}
+
+public fun track_value(track: Track): JsonValue {
+    let value = JsonValue.dict();
+    value["id"] = JsonValue.from_string(track.id);
+    value["title"] = JsonValue.from_string(track.title);
+    value["artist"] = JsonValue.from_string(track.artist);
+    value["album"] = JsonValue.from_string(track.album);
+    value["url"] = JsonValue.from_string(track.url);
+    value["artwork"] = JsonValue.from_string(track.artwork);
+    value["mood"] = JsonValue.from_string(track.mood);
+    return value;
 }
 
 public class Playlist {

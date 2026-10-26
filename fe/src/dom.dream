@@ -92,9 +92,12 @@ internal fun button(action: string, label: string, glyph: string, class_name: st
 
 internal fun artwork(track_name: string, class_name: string): js {
     let image = node("img", class_name, "");
-    image.src = "./assets/" + track_name + ".svg";
+    image.src = track_name.starts_with("https://i.ytimg.com/")
+        ? track_name : "./assets/" + track_name + ".svg";
     image.alt = "";
     image.draggable = false;
+    image.loading = "lazy";
+    image.decoding = "async";
     return image;
 }
 

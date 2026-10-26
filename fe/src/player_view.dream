@@ -1,6 +1,7 @@
 module singularity;
 
 import common;
+
 import state;
 import dom;
 import system;

@@ -1,6 +1,7 @@
 module singularity;
 
 import common;
+
 import state;
 import dom;
 import system;
@@ -229,7 +230,7 @@ internal fun render_view(): void {
         for (let i = 0; i < tracks.length; i = i + 1) {
             section.appendChild(track_row(tracks[i], i));
         }
-        if tracks.length == 0 {
+        if tracks.length == 0 && !(app.view == "search" && app.searching) {
             section.appendChild(
                 node(
                     "p",
@@ -242,6 +243,20 @@ internal fun render_view(): void {
         }
         content.appendChild(section);
         if app.view == "search" {
+            if app.search_error != "" {
+                let error = node("p", "subtitle", app.search_error);
+                error.setAttribute("role", "alert");
+                content.appendChild(error);
+            }
+            if app.searching {
+                let status = node("p", "subtitle", "Searching YouTube…");
+                status.setAttribute("role", "status");
+                content.appendChild(status);
+            } else if app.continuation != "" {
+                let more = button("more-results", "Load more songs", "plus", "soft-button");
+                more.appendChild(node("span", "", "More songs"));
+                content.appendChild(more);
+            }
             content.appendChild(node("h2", "section-label", "Your playlists"));
             render_playlist_cards(content, app.query);
         }
@@ -249,7 +264,7 @@ internal fun render_view(): void {
     content.appendChild(
         node("p", "page-footnote", "A LITTLE FURTHER FROM THE ORDINARY.  /  SINGULARITY")
     );
-    let credits = node("a", "audio-credits", "Demo music: Jan Morgenstern · CC BY-NC-ND 3.0");
+    let credits = node("a", "audio-credits", "Demo audio: MDN Web Audio examples · View credits");
     credits.href = "https://github.com/mdn/webaudio-examples";
     credits.target = "_blank";
     credits.rel = "noopener noreferrer";

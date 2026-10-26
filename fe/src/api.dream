@@ -1,0 +1,141 @@
+module singularity;
+
+import common;
+
+import state;
+import views;
+import storage;
+import system;
+import system.net;
+import system.json;
+import system.collections;
+
+let api_http = HttpClient(false);
+let search_cancel: Option<CancellationSource> = Option.None;
+
+internal fun api_origin(): string {
+    let configured = js.global.document.querySelector("meta[name='singularity-api']");
+    if !configured.is_null() {
+        let value: string = configured.content;
+        return value;
+    }
+    let host: string = js.global.location.hostname;
+    let protocol: string = js.global.location.protocol;
+    return protocol + "//" + host + ":8792";
+}
+
+internal fun remember_track(track: Track): void {
+    if find_track(state().catalog, track.id).is_some() {
+        return;
+    }
+    let catalog = List<Track>();
+    for (let existing in state().catalog) {
+        catalog.push(existing);
+    }
+    catalog.push(track);
+    state().catalog = catalog.take_array();
+}
+
+internal fun schedule_search(): void {
+    let app = state();
+    app.search_generation = app.search_generation + 1;
+    if search_cancel.is_some() {
+        search_cancel.unwrap().cancel();
+    }
+    app.search_results.clear();
+    app.search_error = "";
+    app.continuation = "";
+    app.searching = app.query.trim().length >= 2;
+    if app.searching {
+        Promise.start(fetch_search(app.search_generation, app.query.trim(), ""));
+    }
+}
+
+internal fun more_results(): void {
+    if state().searching || state().continuation == "" {
+        return;
+    }
+    state().searching = true;
+    Promise.start(
+        fetch_search(state().search_generation, state().query.trim(), state().continuation)
+    );
+    render_view();
+}
+
+async fun fetch_search(generation: int, query: string, continuation: string): void {
+    let app = state();
+    if continuation == "" {
+        Time.delay(350).await;
+    }
+    if generation != app.search_generation {
+        return;
+    }
+    let source = CancellationSource();
+    search_cancel = Option.Some(source);
+    let url = Url.parse(api_origin() + "/api/search").unwrap();
+    url.query.set("q", query);
+    if continuation != "" {
+        url.query.set("continuation", continuation);
+    }
+    let received = api_http.send(HttpRequest(HttpMethod.Get, url), Option.Some(source.token)).await;
+    if received.is_err() {
+        if generation == app.search_generation {
+            app.searching = false;
+            app.search_error = "Search is unavailable. Start the music API and try again.";
+            if app.view == "search" {
+                render_view();
+            }
+        }
+        return;
+    }
+    let response = received.unwrap();
+    let text = response.read_text(1048576, Option.Some(source.token)).await;
+    response.close();
+    if generation != app.search_generation {
+        return;
+    }
+    app.searching = false;
+    if response.status != 200 || text.is_err() {
+        app.search_error = response.status
+            == 429
+            ? "YouTube is busy. Try again shortly." : "YouTube search could not finish. Try again.";
+    } else {
+        let parsed = Json.deserialize<JsonValue>(text.unwrap());
+        if parsed.is_ok() {
+            let root = parsed.unwrap();
+            let tracks = root.get("tracks").unwrap_or(JsonValue.null()).as_array();
+            if tracks.is_some() {
+                for (let value in tracks.unwrap()) {
+                    let decoded = Json.deserialize<Track>(Json.serialize(value));
+                    if decoded.is_err() {
+                        continue;
+                    }
+                    let track = decoded.unwrap();
+                    if !track.id.starts_with("yt:") || !track.url.starts_with("/api/audio/") {
+                        continue;
+                    }
+                    track.url = api_origin() + track.url;
+                    let duplicate = false;
+                    for (let existing in app.search_results) {
+                        if existing.id == track.id {
+                            duplicate = true;
+                        }
+                    }
+                    if !duplicate {
+                        remember_track(track);
+                        app.search_results.push(track);
+                    }
+                }
+            }
+            app.continuation = root.get("continuation")
+                .unwrap_or(JsonValue.null())
+                .as_string()
+                .unwrap_or("");
+        } else {
+            app.search_error = "Search returned an unreadable response. Try again.";
+        }
+    }
+    if app.view == "search" {
+        render_view();
+    }
+}

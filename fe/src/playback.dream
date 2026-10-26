@@ -1,6 +1,7 @@
 module singularity;
 
 import common;
+
 import state;
 import player_view;
 import system;

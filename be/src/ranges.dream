@@ -1,0 +1,68 @@
+module singularity_api;
+
+import system;
+
+public class ByteRange {
+    public start: long;
+    public end: long;
+
+    public constructor(start: long, end: long) {
+        this.start = start;
+        this.end = end;
+    }
+
+    public get length(): long {
+        return this.end - this.start + 1L;
+    }
+}
+
+fun decimal(value: string): Option<long> {
+    if value == "" {
+        return Option.None;
+    }
+    for (let character in value) {
+        if character < '0' || character > '9' {
+            return Option.None;
+        }
+    }
+    let parsed = long.parse(value);
+    return parsed.is_ok() ? Option.Some(parsed.unwrap()) : Option.None;
+}
+
+/// Resolves one HTTP byte range; multipart ranges are intentionally unsupported.
+public fun parse_range(header: string, size: long): Option<ByteRange> {
+    if size <= 0L || !header.starts_with("bytes=") || header.contains(",") {
+        return Option.None;
+    }
+    let parts = header.substring(6, header.length).split("-");
+    if parts.length != 2 {
+        return Option.None;
+    }
+    let start = 0L;
+    let end = size - 1L;
+    if parts[0] == "" {
+        let suffix = decimal(parts[1]);
+        if suffix.is_none() || suffix.unwrap() <= 0L {
+            return Option.None;
+        }
+        start = suffix.unwrap() >= size ? 0L : size - suffix.unwrap();
+    } else {
+        let parsed = decimal(parts[0]);
+        if parsed.is_none() || parsed.unwrap() >= size {
+            return Option.None;
+        }
+        start = parsed.unwrap();
+        if parts[1] != "" {
+            let last = decimal(parts[1]);
+            if last.is_none() || last.unwrap() < start {
+                return Option.None;
+            }
+            end = last.unwrap() < size ? last.unwrap() : size - 1L;
+        }
+    }
+    // Browser media requests resume from Content-Range. Bound memory and upstream latency.
+    if end - start >= 1048576L {
+        end = start + 1048575L;
+    }
+    return Option.Some(ByteRange(start, end));
+}

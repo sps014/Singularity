@@ -1,0 +1,25 @@
+module singularity_api;
+
+import system;
+
+/// Releases capacity even when a disconnected request drops its pending future.
+public class Permit {
+    semaphore: Semaphore;
+    released: bool;
+
+    public constructor(semaphore: Semaphore) {
+        this.semaphore = semaphore;
+        this.released = false;
+    }
+
+    public fun release(): void {
+        if !this.released {
+            this.released = true;
+            this.semaphore.release();
+        }
+    }
+
+    del() {
+        this.release();
+    }
+}

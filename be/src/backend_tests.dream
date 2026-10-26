@@ -1,0 +1,127 @@
+module singularity_api;
+
+import cache;
+import ranges;
+import permit;
+import mapping;
+import responses;
+import routes;
+import system;
+import system.json;
+import system.net;
+import system.testing;
+import system.webapi;
+import youtube_explode;
+
+@test
+fun byte_ranges_cover_browser_seeking(): void {
+    let first = parse_range("bytes=0-", 5000000L).unwrap();
+    Assert.eq(first.start, 0L);
+    Assert.eq(first.length, 1048576L);
+    let middle = parse_range("bytes=200-499", 1000L).unwrap();
+    Assert.eq(middle.start, 200L);
+    Assert.eq(middle.end, 499L);
+    Assert.eq(parse_range("bytes=-200", 1000L).unwrap().start, 800L);
+    Assert.eq(parse_range("bytes=-2000", 1000L).unwrap().start, 0L);
+    Assert.eq(parse_range("bytes=900-2000", 1000L).unwrap().end, 999L);
+    for (let invalid in [
+        "bytes=1000-",
+        "bytes=20-10",
+        "bytes=-0",
+        "bytes=0-1,4-5",
+        "items=1-2",
+        "bytes=x-",
+        "bytes=9223372036854775808-",
+        "bytes=+1-2"
+    ]) {
+        Assert.is_true(parse_range(invalid, 1000L).is_none());
+    }
+    Assert.is_true(parse_range("bytes=0-", 0L).is_none());
+}
+
+@test
+fun cache_expires_evicts_and_replaces(): void {
+    let cache = Cache<string>(2, 100L);
+    cache.put("a", "one", 0L);
+    cache.put("b", "two", 10L);
+    Assert.eq(cache.get("a", 99L).unwrap(), "one");
+    Assert.is_true(cache.get("a", 100L).is_none());
+    cache.put("c", "three", 101L);
+    cache.put("c", "new", 102L);
+    cache.put("d", "four", 103L);
+    Assert.is_true(cache.get("b", 104L).is_none());
+    Assert.eq(cache.get("c", 104L).unwrap(), "new");
+    cache.remove("c");
+    Assert.is_true(cache.get("c", 104L).is_none());
+}
+
+@test
+fun permits_release_on_drop_and_only_once(): void {
+    let semaphore = Semaphore(1);
+    Assert.is_true(semaphore.try_acquire());
+    release_permit_twice(semaphore);
+    Assert.is_true(semaphore.try_acquire());
+    Assert.is_true(!semaphore.try_acquire());
+    drop_permit(semaphore);
+    Assert.is_true(semaphore.try_acquire());
+}
+
+fun release_permit_twice(semaphore: Semaphore): void {
+    let permit = Permit(semaphore);
+    Assert.is_true(!semaphore.try_acquire());
+    permit.release();
+    permit.release();
+}
+
+fun drop_permit(semaphore: Semaphore): void {
+    let _permit = Permit(semaphore);
+    Assert.is_true(!semaphore.try_acquire());
+}
+
+@test
+fun audio_selection_prefers_browser_compatible_audio(): void {
+    let json = Json.deserialize<JsonValue>(
+        "{\"streamingData\":{\"adaptiveFormats\":[{\"itag\":251,\"url\":\"https://example.com/opus\",\"mimeType\":\"audio/webm; codecs=\\\"opus\\\"\",\"bitrate\":160000,\"contentLength\":\"1000\"},{\"itag\":140,\"url\":\"https://example.com/aac\",\"mimeType\":\"audio/mp4; codecs=\\\"mp4a.40.2\\\"\",\"bitrate\":128000,\"contentLength\":\"1000\"}]}}"
+    ).unwrap();
+    let manifest = StreamManifest.from_player_response(json).unwrap();
+    Assert.eq(choose_audio(manifest).unwrap().itag, 140);
+    Assert.is_true(choose_audio(StreamManifest([])).is_none());
+}
+
+@test
+fun upstream_errors_hide_sensitive_details(): void {
+    let response = upstream_error(YoutubeError("http", "secret cookie and signed URL"));
+    Assert.eq(response.status, 502);
+    Assert.is_true(!response.body.contains("secret"));
+    Assert.eq(upstream_error(YoutubeError("rate_limited", "")).status, 429);
+    Assert.eq(upstream_error(YoutubeError("busy", "")).status, 503);
+}
+
+@test
+@timeout(30000)
+async fun api_validates_requests_without_contacting_youtube(): void {
+    let app = WebApp();
+    app.include_router(MusicRoutes.router()).unwrap();
+    let port = app.listen("127.0.0.1", 0).await.unwrap();
+    let http = HttpClient(false);
+    let base = "http://127.0.0.1:" + port.to_string();
+    for (let path in [
+        "/api/health",
+        "/api/catalog",
+        "/api/search?q=x",
+        "/api/tracks/invalid",
+        "/api/audio/invalid"
+    ]) {
+        let response = http.send(HttpRequest(HttpMethod.Get, Url.parse(base + path).unwrap()))
+            .await
+            .unwrap();
+        let expected = path == "/api/health" || path == "/api/catalog" ? 200 : 400;
+        Assert.eq(response.status, expected);
+        let text = response.read_text().await.unwrap();
+        Assert.is_true(Json.deserialize<JsonValue>(text).is_ok());
+        response.close();
+    }
+    http.close();
+    app.shutdown();
+    app.wait().await;
+}

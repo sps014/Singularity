@@ -1,0 +1,71 @@
+module singularity_api;
+
+import common;
+import common.Track as Track;
+import common.track_value as track_value;
+
+import system;
+import system.json;
+import system.collections;
+import youtube_explode;
+
+public fun youtube_track(id: string, title: string, artist: string): Track {
+    return Track(
+        "yt:" + id,
+        title,
+        artist,
+        "YouTube",
+        "/api/audio/" + id,
+        "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg",
+        "YouTube"
+    );
+}
+
+public fun search_json(page: SearchPage): string {
+    let tracks = JsonValue.array();
+    for (let item in page.results) {
+        switch (item) {
+            SearchResult.Video(video) => {
+                tracks.push(
+                    track_value(
+                        youtube_track(video.id.value, video.title, video.author.channel_title)
+                    )
+                );
+            }
+            _ => {}
+        }
+    }
+    let body = JsonValue.dict();
+    body["tracks"] = tracks;
+    body["continuation"] = page.continuation.is_some()
+        ? JsonValue.from_string(page.continuation.unwrap()) : JsonValue.null();
+    return Json.serialize(body);
+}
+
+/// Prefer AAC/MP4 for browser coverage, then WebM/Opus, within audio-only formats.
+public fun choose_audio(manifest: StreamManifest): Option<StreamInfo> {
+    let best: Option<StreamInfo> = Option.None;
+    for (let stream in manifest.streams) {
+        let name = stream.container.name.to_lower();
+        if stream.kind
+            != StreamKind.AudioOnly
+            || stream.size.is_none()
+            || stream.size.unwrap()
+            .bytes <= 0L || (name != "mp4" && name != "webm" && name != "m4a") {
+            continue;
+        }
+        let preferred = name == "mp4" || name == "m4a";
+        let previous_preferred = best.is_some() && best.unwrap().container.name != "webm";
+        if best.is_none()
+            || (preferred && !previous_preferred)
+            || (
+                preferred
+                    == previous_preferred
+                    && stream.bitrate.bits_per_second > best.unwrap()
+                    .bitrate.bits_per_second
+            ) {
+            best = Option.Some(stream);
+        }
+    }
+    return best;
+}

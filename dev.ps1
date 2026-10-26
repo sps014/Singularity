@@ -2,7 +2,10 @@ param(
     [ValidateSet("run", "build", "test", "install")]
     [string]$Command = "run",
     [string]$DreamSource = "../dream",
+    [ValidateSet("frontend", "backend")]
+    [string]$Service = "frontend",
     [int]$Port = 8791,
+    [int]$ApiPort = 8792,
     [switch]$Release
 )
 $ErrorActionPreference = "Stop"
@@ -15,12 +18,20 @@ if (!(Test-Path -LiteralPath $env:DREAM_BIN) -or !(Test-Path -LiteralPath $dream
 Push-Location $PSScriptRoot
 try {
     $arguments = @($Command)
+    if ($Command -eq "test") {
+        & $dreamer test -p common --node
+        if ($LASTEXITCODE -ne 0) { throw "Shared tests failed" }
+        & $env:DREAM_BIN test be/src/backend_tests.dream
+        if ($LASTEXITCODE -ne 0) { throw "Backend tests failed" }
+        return
+    }
     if ($Command -eq "run" -or $Command -eq "build") {
-        $arguments += @("-p", "singularity")
+        $package = if ($Service -eq "backend") { "singularity_api" } else { "singularity" }
+        $arguments += @("-p", $package)
         if ($Release) { $arguments += "--release" }
     }
-    if ($Command -eq "run") { $arguments += @("--port", "$Port") }
-    if ($Command -eq "test") { $arguments += "--node" }
+    if ($Command -eq "run" -and $Service -eq "frontend") { $arguments += @("--port", "$Port") }
+    if ($Service -eq "backend") { $env:SINGULARITY_PORT = "$ApiPort" }
     & $dreamer @arguments
     if ($LASTEXITCODE -ne 0) { throw "dreamer $Command failed (exit $LASTEXITCODE)" }
 } finally {

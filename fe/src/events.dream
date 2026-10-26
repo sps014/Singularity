@@ -1,6 +1,7 @@
 module singularity;
 
 import common;
+
 import state;
 import dom;
 import views;
@@ -8,6 +9,7 @@ import player_view;
 import playback;
 import storage;
 import system;
+import api;
 
 let editor_mode = "create";
 let editor_track = "";
@@ -124,6 +126,7 @@ internal fun on_click(event: js): void {
             event.preventDefault();
             app.view = id;
             app.query = "";
+            schedule_search();
             el("search").value = "";
             render_view();
             el("content").scrollTop = 0;
@@ -137,6 +140,7 @@ internal fun on_click(event: js): void {
         }
         "track" => play_collection(id),
         "play-all" => play_collection(""),
+        "more-results" => more_results(),
         "play" => Promise.start(toggle_playback()),
         "retry" => Promise.start(start_selected()),
         "next" => next_track(1, false),
@@ -231,6 +235,7 @@ internal fun on_input(event: js): void {
     let app = state();
     if id == "search" {
         app.query = event.target.value;
+        schedule_search();
         if app.view != "search" {
             app.view = "search";
         }

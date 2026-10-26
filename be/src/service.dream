@@ -1,0 +1,116 @@
+module singularity_api;
+
+import common;
+
+import cache;
+import mapping;
+import system;
+import permit;
+import system.collections;
+import system.json;
+import youtube_explode;
+
+public class MusicService {
+    public client: YoutubeClient;
+    searches: Cache<string>;
+    videos: Cache<string>;
+    streams: Cache<StreamInfo>;
+    slots: Semaphore;
+
+    public constructor() {
+        this.client = YoutubeClient();
+        this.searches = Cache<string>(128, 120000L);
+        this.videos = Cache<string>(256, 600000L);
+        this.streams = Cache<StreamInfo>(64, 60000L);
+        this.slots = Semaphore(8);
+    }
+
+    public async fun search(
+        query: string,
+        continuation: Option<string>,
+        token: Option<CancellationToken>
+    ): Result<string, YoutubeError> {
+        let lifetime = [this];
+        let key = Json.serialize([query.to_lower(), continuation.unwrap_or("")]);
+        let cached = lifetime[0].searches.get(key, DateTime.utc_now().epoch_millis);
+        if cached.is_some() {
+            return Result.Ok(cached.unwrap());
+        }
+        if !lifetime[0].slots.try_acquire() {
+            return Result.Err(YoutubeError("busy", "upstream capacity reached"));
+        }
+        let permit = Permit(lifetime[0].slots);
+        let page = lifetime[0]
+            .client.search.get_page(query, SearchFilter.Video, continuation, token)
+            .await;
+        permit.release();
+        if page.is_err() {
+            return Result.Err(page.unwrap_err());
+        }
+        let json = search_json(page.unwrap());
+        lifetime[0].searches.put(key, json, DateTime.utc_now().epoch_millis);
+        return Result.Ok(json);
+    }
+
+    public async fun video(
+        id: VideoId,
+        token: Option<CancellationToken>
+    ): Result<string, YoutubeError> {
+        let lifetime = [this];
+        let cached = lifetime[0].videos.get(id.value, DateTime.utc_now().epoch_millis);
+        if cached.is_some() {
+            return Result.Ok(cached.unwrap());
+        }
+        if !lifetime[0].slots.try_acquire() {
+            return Result.Err(YoutubeError("busy", "upstream capacity reached"));
+        }
+        let permit = Permit(lifetime[0].slots);
+        let result = lifetime[0].client.videos.get(id, token).await;
+        permit.release();
+        if result.is_err() {
+            return Result.Err(result.unwrap_err());
+        }
+        let video = result.unwrap();
+        let json = Json.serialize(
+            track_value(youtube_track(id.value, video.title, video.author.channel_title))
+        );
+        lifetime[0].videos.put(id.value, json, DateTime.utc_now().epoch_millis);
+        return Result.Ok(json);
+    }
+
+    public fun invalidate_stream(id: string): void {
+        this.streams.remove(id);
+    }
+
+    public async fun audio(
+        id: VideoId,
+        token: Option<CancellationToken>
+    ): Result<StreamInfo, YoutubeError> {
+        let lifetime = [this];
+        let cached = lifetime[0].streams.get(id.value, DateTime.utc_now().epoch_millis);
+        if cached.is_some() {
+            return Result.Ok(cached.unwrap());
+        }
+        if !lifetime[0].slots.try_acquire() {
+            return Result.Err(YoutubeError("busy", "upstream capacity reached"));
+        }
+        let permit = Permit(lifetime[0].slots);
+        let result = lifetime[0].client.streams.get_manifest(id, token).await;
+        permit.release();
+        if result.is_err() {
+            return Result.Err(result.unwrap_err());
+        }
+        let stream = choose_audio(result.unwrap());
+        if stream.is_none() {
+            return Result.Err(YoutubeError("unplayable", "no browser audio format available"));
+        }
+        lifetime[0].streams.put(id.value, stream.unwrap(), DateTime.utc_now().epoch_millis);
+        return Result.Ok(stream.unwrap());
+    }
+}
+
+let shared_music = MusicService();
+
+public fun music(): MusicService {
+    return shared_music;
+}

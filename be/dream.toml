@@ -1,0 +1,9 @@
+[package]
+name = "singularity_api"
+version = "0.1.0"
+type = "bin"
+entry = "src/main.dream"
+
+[dependencies]
+common = { path = "../common" }
+youtube_explode = { version = "0.1.0", path = "../../dream-packages/youtube_explode" }

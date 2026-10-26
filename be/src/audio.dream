@@ -1,0 +1,106 @@
+module singularity_api;
+
+import service;
+import ranges;
+import responses;
+import system;
+import permit;
+import system.collections;
+import system.webapi;
+import youtube_explode;
+
+let audio_slots = Semaphore(16);
+
+public async fun audio_response(
+    id: VideoId,
+    request: HttpIncoming,
+    token: Option<CancellationToken>
+): HttpOutgoing {
+    let resolved = music().audio(id, token).await;
+    if resolved.is_err() {
+        return upstream_error(resolved.unwrap_err());
+    }
+    let info = resolved.unwrap();
+    let size = info.size.unwrap().bytes;
+    let mime = info.container.name == "webm" ? "audio/webm" : "audio/mp4";
+    if request.method == "HEAD" {
+        let response = HttpOutgoing.empty(200);
+        response.set_header("Content-Length", size.to_string());
+        response.set_header("Content-Type", mime);
+        response.set_header("Accept-Ranges", "bytes");
+        return response;
+    }
+    let header = request.header("Range");
+    if header.is_none() {
+        // Media elements send Range. Other clients can follow a short-lived direct URL.
+        return HttpOutgoing.empty(307)
+            .set_header("Location", info.url)
+            .set_header("Cache-Control", "no-store");
+    }
+    let parsed = parse_range(header.unwrap(), size);
+    if parsed.is_none() {
+        return HttpOutgoing.empty(416).set_header("Content-Range", "bytes */" + size.to_string());
+    }
+    if !audio_slots.try_acquire() {
+        return api_error("busy", "Too many audio requests. Retry shortly.", 503)
+            .set_header("Retry-After", "2");
+    }
+    let permit = Permit(audio_slots);
+    let result = read_range(info, parsed.unwrap(), token).await;
+    permit.release();
+    if result.is_err() {
+        music().invalidate_stream(id.value);
+        return upstream_error(result.unwrap_err());
+    }
+    let range = parsed.unwrap();
+    let response = HttpOutgoing.bytes(result.unwrap(), 206);
+    response.set_header("Content-Type", mime);
+    response.set_header("Content-Length", range.length.to_string());
+    let content_range = "bytes "
+        + range.start.to_string() + "-" + range.end.to_string() + "/" + size.to_string();
+    response.set_header("Content-Range", content_range);
+    response.set_header("Accept-Ranges", "bytes");
+    response.set_header("Cache-Control", "private, no-store");
+    return response;
+}
+
+async fun read_range(
+    info: StreamInfo,
+    range: ByteRange,
+    token: Option<CancellationToken>
+): Result<byte[], YoutubeError> {
+    let opened = music().client.streams.get(info, token).await;
+    if opened.is_err() {
+        return Result.Err(opened.unwrap_err());
+    }
+    let stream = opened.unwrap();
+    let moved = stream.seek(range.start);
+    if moved.is_err() {
+        stream.close();
+        return Result.Err(YoutubeError("io", "stream seek failed"));
+    }
+    let bytes = List<byte>();
+    let remaining = (int)range.length;
+    while remaining > 0 {
+        let count = remaining < 65536 ? remaining : 65536;
+        let chunk = stream.read_async(count, token).await;
+        if chunk.is_err() {
+            let error = chunk.unwrap_err();
+            stream.close();
+            return Result.Err(
+                YoutubeError(
+                    error.code() == "ECANCELLED" ? "cancelled" : "io",
+                    "audio range was interrupted"
+                )
+            );
+        }
+        if chunk.unwrap().length == 0 {
+            stream.close();
+            return Result.Err(YoutubeError("io", "audio range was interrupted"));
+        }
+        bytes.push_all(chunk.unwrap());
+        remaining = remaining - chunk.unwrap().length;
+    }
+    stream.close();
+    return Result.Ok(bytes.take_array());
+}
