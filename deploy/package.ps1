@@ -1,7 +1,8 @@
 param(
     [string]$PackagesSource = "../../dream-packages",
     [string]$Archive = "../.verification/deploy/dream-0.0.17-linux-x64.tar.gz",
-    [string]$OutputDirectory = "dist"
+    [string]$OutputDirectory = "dist",
+    [string]$DreamSource = "../dream"
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -16,6 +17,8 @@ $output = [IO.Path]::GetFullPath((Join-Path $root $OutputDirectory))
 if ((Test-Path -LiteralPath $output) -and (Get-ChildItem -LiteralPath $output -Force | Select-Object -First 1)) {
     throw "dist already exists. Move it aside before creating a new release."
 }
+& (Join-Path $root "dev.ps1") build -Release -DreamSource $DreamSource
+if ($LASTEXITCODE -ne 0) { throw "Frontend build failed" }
 New-Item -ItemType Directory -Force "$staging/singularity", "$staging/dream-packages", $output | Out-Null
 Copy-Item -LiteralPath "$root/dream.toml" -Destination "$staging/singularity/"
 foreach ($member in @("fe", "be", "common")) {
@@ -23,7 +26,9 @@ foreach ($member in @("fe", "be", "common")) {
     New-Item -ItemType Directory -Force $destination | Out-Null
     Copy-Item -LiteralPath "$root/$member/dream.toml", "$root/$member/src" -Destination $destination -Recurse
 }
-Copy-Item -LiteralPath "$root/fe/index.html", "$root/fe/bootstrap.js", "$root/fe/styles", "$root/fe/assets" -Destination "$staging/singularity/fe/" -Recurse
+Copy-Item -LiteralPath "$root/fe/index.html", "$root/fe/bootstrap.js", "$root/fe/session.js", "$root/fe/styles", "$root/fe/assets" -Destination "$staging/singularity/fe/" -Recurse
+New-Item -ItemType Directory -Force "$staging/singularity/fe/target/web" | Out-Null
+Copy-Item -LiteralPath "$root/fe/target/web/main.wasm", "$root/fe/target/web/main.web.runtime.js" -Destination "$staging/singularity/fe/target/web/"
 foreach ($package in @("youtube_explode", "markup", "sha1")) {
     $destination = "$staging/dream-packages/$package"
     New-Item -ItemType Directory -Force $destination | Out-Null

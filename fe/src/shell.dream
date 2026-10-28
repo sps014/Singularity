@@ -35,7 +35,7 @@ fun workspace_markup(): string {
         + "<input id=\"search\" type=\"search\" placeholder=\"Find your next feeling\" aria-label=\"Search songs, artists, albums and playlists\" autocomplete=\"off\">"
         + "<kbd>/</kbd>"
         + "</label>"
-        + "<span class=\"avatar\" aria-label=\"Local library\">S</span>"
+        + "<button id=\"session-logout\" class=\"icon-button\" aria-label=\"Sign out\" title=\"Sign out\">↪</button>"
         + "</header>" + "<main id=\"content\" tabindex=\"-1\">" + "</main>" + "</div>";
 }
 

@@ -17,6 +17,10 @@ internal fun api_origin(): string {
     let configured = js.global.document.querySelector("meta[name='singularity-api']");
     if !configured.is_null() {
         let value: string = configured.content;
+        if value == "same-origin" {
+            let origin: string = js.global.location.origin;
+            return origin;
+        }
         return value;
     }
     let host: string = js.global.location.hostname;

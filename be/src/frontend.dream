@@ -1,0 +1,45 @@
+module singularity_api;
+
+import system;
+import system.io;
+import system.webapi;
+
+/// Only these packaged assets can be read; no user-controlled filesystem paths.
+public class Frontend {
+    public static fun middleware(): Middleware {
+        return Middleware(async (borrow ctx: RequestContext, borrow next: Next) => {
+            let path = ctx.incoming.path == "/" ? "/index.html" : ctx.incoming.path;
+            let mime = Frontend.mime(path);
+            if mime == "" || (ctx.incoming.method != "GET" && ctx.incoming.method != "HEAD") {
+                return next.call().await;
+            }
+            let file = "public" + path;
+            if !File.exists(file) {
+                return next.call().await;
+            }
+            let bytes = File.read_bytes(file, ctx.cancellation_token).await;
+            if bytes.is_err() {
+                return HttpOutgoing.text("Asset unavailable", 503);
+            }
+            return HttpOutgoing.bytes(bytes.unwrap())
+                .set_header("Content-Type", mime)
+                .set_header("Cache-Control", "no-cache")
+                .set_header("X-Content-Type-Options", "nosniff")
+                .set_header("Referrer-Policy", "same-origin")
+                .set_header("X-Frame-Options", "DENY");
+        });
+    }
+
+    public static fun mime(path: string): string {
+        if path == "/index.html" { return "text/html; charset=utf-8"; }
+        if path == "/bootstrap.js" || path == "/session.js" || path == "/target/web/main.web.runtime.js" { return "text/javascript; charset=utf-8"; }
+        if path == "/target/web/main.wasm" { return "application/wasm"; }
+        for (let name in ["tokens", "layout", "components", "access"]) {
+            if path == "/styles/" + name + ".css" { return "text/css; charset=utf-8"; }
+        }
+        for (let name in ["bloom", "dunes", "hero", "mark", "orbit", "tide"]) {
+            if path == "/assets/" + name + ".svg" { return "image/svg+xml"; }
+        }
+        return "";
+    }
+}

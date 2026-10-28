@@ -1,3 +1,5 @@
+import { enableSessionRequests } from './session.js';
+enableSessionRequests();
 // Keep browser exceptions and malformed input outside the Dream host boundary.
 globalThis.singularityStorage = Object.freeze({
   read() {

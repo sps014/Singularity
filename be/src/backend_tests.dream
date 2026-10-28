@@ -7,6 +7,7 @@ import mapping;
 import responses;
 import routes;
 import access;
+import frontend;
 import system;
 import system.json;
 import system.net;
@@ -154,6 +155,47 @@ async fun api_access_rejects_missing_wrong_and_url_tokens(): void {
     let health = http.send(HttpRequest(HttpMethod.Get, Url.parse(base + "/api/health").unwrap())).await.unwrap();
     Assert.eq(health.status, 200);
     health.close();
+    http.close();
+    app.shutdown();
+    app.wait().await;
+}
+
+@test
+fun frontend_only_serves_packaged_asset_paths(): void {
+    Assert.eq(Frontend.mime("/target/web/main.wasm"), "application/wasm");
+    Assert.eq(Frontend.mime("/styles/access.css"), "text/css; charset=utf-8");
+    for (let path in ["/../dream.toml", "/%2e%2e/dream.toml", "/src/main.dream", "/api/catalog", "/assets/../dream.toml", "/assets/unknown.svg"]) {
+        Assert.eq(Frontend.mime(path), "");
+    }
+}
+
+@test
+@timeout(30000)
+async fun browser_session_sets_secure_cookie_and_accepts_it(): void {
+    let secret = "test-session-key-0123456789abcdef0123456789";
+    let app = WebApp();
+    app.include_router(MusicRoutes.router()).unwrap();
+    app.use(ApiAccess.middleware(secret)).unwrap();
+    let port = app.listen("127.0.0.1", 0).await.unwrap();
+    let base = "http://127.0.0.1:" + port.to_string();
+    let http = HttpClient(false);
+    let login = HttpRequest(HttpMethod.Post, Url.parse(base + "/api/session").unwrap());
+    login.headers.set("Authorization", "Bearer " + secret);
+    let response = http.send(login).await.unwrap();
+    Assert.eq(response.status, 200);
+    let cookie = response.headers.get("Set-Cookie").unwrap();
+    Assert.is_true(cookie.contains("HttpOnly; Secure; SameSite=Strict"));
+    Assert.is_true(cookie.contains("Path=/api; Max-Age=86400"));
+    response.close();
+    let request = HttpRequest(HttpMethod.Get, Url.parse(base + "/api/catalog").unwrap());
+    request.headers.set("Cookie", "unrelated=value; " + cookie.split(';')[0]);
+    let catalog = http.send(request).await.unwrap();
+    Assert.eq(catalog.status, 200);
+    catalog.close();
+    let logout = http.send(HttpRequest(HttpMethod.Delete, Url.parse(base + "/api/session").unwrap())).await.unwrap();
+    Assert.eq(logout.status, 204);
+    Assert.is_true(logout.headers.get("Set-Cookie").unwrap().contains("Max-Age=0"));
+    logout.close();
     http.close();
     app.shutdown();
     app.wait().await;

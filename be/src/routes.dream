@@ -15,7 +15,11 @@ import youtube_explode;
 public class MusicRoutes {
     @get("/health")
     public static fun health(): HttpOutgoing {
-        return HttpOutgoing.json_text("{\"status\":\"ok\",\"service\":\"singularity\"}");
+        let body = JsonValue.dict();
+        body["status"] = JsonValue.from_string("ok");
+        body["service"] = JsonValue.from_string("singularity");
+        body["revision"] = JsonValue.from_string(System.env("RENDER_GIT_COMMIT").unwrap_or("local"));
+        return HttpOutgoing.json_text(Json.serialize(body)).set_header("Cache-Control", "no-store");
     }
 
     @get("/catalog")

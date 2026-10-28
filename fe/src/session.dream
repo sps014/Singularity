@@ -1,0 +1,61 @@
+module singularity;
+
+import api;
+import dom;
+import system;
+import system.net;
+
+let session_http = HttpClient(false);
+
+internal fun private_deployment(): bool {
+    return !js.global.document.querySelector("meta[name='singularity-session']").is_null();
+}
+
+internal async fun session_ready(): bool {
+    let result = session_http.send(HttpRequest(HttpMethod.Get, Url.parse(api_origin() + "/api/session").unwrap())).await;
+    if result.is_err() { return false; }
+    let response = result.unwrap();
+    let ready = response.status == 200;
+    response.close();
+    return ready;
+}
+
+internal fun render_sign_in(): void {
+    el("app").innerHTML = "<main class=\"access-screen\"><form id=\"access-form\" class=\"access-card\"><span class=\"brand-mark\">◒</span><p class=\"access-eyebrow\">YOUR PRIVATE MUSIC SPACE</p><h1>A little further<br>from the ordinary.</h1><p>Enter your player access key to come in.</p><label for=\"access-key\">Access key</label><input id=\"access-key\" type=\"password\" autocomplete=\"current-password\" required minlength=\"32\" maxlength=\"200\"><button id=\"access-submit\" class=\"primary-button\" type=\"submit\">Enter your space <span>→</span></button><p id=\"access-status\" role=\"status\" aria-live=\"polite\">Your library stays in this browser.</p></form></main>";
+    el("access-form").addEventListener("submit", on_sign_in);
+    el("access-key").focus();
+}
+
+fun on_sign_in(event: js): void {
+    event.preventDefault();
+    Promise.start(sign_in());
+}
+
+async fun sign_in(): void {
+    let key: string = el("access-key").value;
+    el("access-submit").disabled = true;
+    el("access-status").textContent = "Opening your space…";
+    let request = HttpRequest(HttpMethod.Post, Url.parse(api_origin() + "/api/session").unwrap());
+    request.headers.set("Authorization", "Bearer " + key);
+    let result = session_http.send(request).await;
+    el("access-key").value = "";
+    if result.is_ok() {
+        let response = result.unwrap();
+        let success = response.status == 200;
+        response.close();
+        if success { js.global.location.reload(); return; }
+    }
+    el("access-submit").disabled = false;
+    el("access-status").textContent = "Could not sign in. Check your access key and try again.";
+    el("access-key").focus();
+}
+
+internal fun on_sign_out(event: js): void {
+    Promise.start(sign_out());
+}
+
+async fun sign_out(): void {
+    let result = session_http.send(HttpRequest(HttpMethod.Delete, Url.parse(api_origin() + "/api/session").unwrap())).await;
+    if result.is_ok() { result.unwrap().close(); }
+    js.global.location.reload();
+}

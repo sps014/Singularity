@@ -4,7 +4,7 @@ import responses;
 import system;
 import system.webapi;
 
-/// Header-only access for a small private deployment. Never accept secrets in URLs.
+/// Bearer and same-origin browser access. Never accept secrets in URLs.
 public class ApiAccess {
     public static fun middleware(secret: string): Middleware {
         let expected = Encoding.utf8_encode("Bearer " + secret);
@@ -15,10 +15,29 @@ public class ApiAccess {
                     return next.call().await;
                 }
                 let provided = ctx.incoming.header("Authorization").unwrap_or("");
-                if !ApiAccess.matches(expected, provided) {
+                let cookie = "";
+                for (let part in ctx.incoming.header("Cookie").unwrap_or("").split(';')) {
+                    let item = part.trim();
+                    if item.starts_with("singularity_access=") {
+                        cookie = item.substring("singularity_access=".length, item.length);
+                    }
+                }
+                let authorized = ApiAccess.matches(expected, provided)
+                    || ApiAccess.matches(expected, "Bearer " + cookie);
+                if ctx.incoming.path == "/api/session" && ctx.incoming.method == "DELETE" {
+                    return HttpOutgoing.empty(204).set_header("Set-Cookie", "singularity_access=; Path=/api; Max-Age=0; HttpOnly; Secure; SameSite=Strict");
+                }
+                if !authorized {
                     return api_error("unauthorized", "A valid bearer token is required.", 401)
                         .set_header("WWW-Authenticate", "Bearer")
                         .set_header("X-Content-Type-Options", "nosniff");
+                }
+                if ctx.incoming.path == "/api/session" {
+                    let response = HttpOutgoing.json_text("{\"authenticated\":true}").set_header("Cache-Control", "no-store");
+                    if ctx.incoming.method == "POST" && ApiAccess.matches(expected, provided) {
+                        response.set_header("Set-Cookie", "singularity_access=" + secret + "; Path=/api; Max-Age=86400; HttpOnly; Secure; SameSite=Strict");
+                    }
+                    return response;
                 }
                 return next.call().await;
             }

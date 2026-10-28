@@ -1,0 +1,139 @@
+name: Build, test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: singularity-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DREAM_VERSION: '0.0.18'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: singularity
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: sps014/dream-packages
+          ref: 605214f0cbe924079da7317f33538bb283fff2ea
+          path: dream-packages
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: sps014/dream
+          ref: v${{ env.DREAM_VERSION }}
+          path: dream-tooling
+          sparse-checkout: scripts/fetch-dev-llvm.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install packaged Dream compiler
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/dream-download" "$RUNNER_TEMP/dream"
+          echo "Waiting for the published Dream v$DREAM_VERSION release assets."
+          for attempt in $(seq 1 120); do
+            if gh release view "v$DREAM_VERSION" --repo sps014/dream --json assets \
+              --jq '.assets[].name' 2>/dev/null | grep -Fxq "dream-$DREAM_VERSION-linux-x64.tar.gz"; then
+              break
+            fi
+            if [ "$attempt" = 120 ]; then echo 'Toolchain release assets were not published.'; exit 1; fi
+            sleep 15
+          done
+          gh release download "v$DREAM_VERSION" --repo sps014/dream \
+            --pattern "dream-$DREAM_VERSION-linux-x64.tar.gz" --pattern SHA256SUMS \
+            --dir "$RUNNER_TEMP/dream-download"
+          cd "$RUNNER_TEMP/dream-download"
+          grep "  dream-$DREAM_VERSION-linux-x64.tar.gz$" SHA256SUMS | sha256sum --check --strict
+          tar -xzf "dream-$DREAM_VERSION-linux-x64.tar.gz" -C "$RUNNER_TEMP/dream" --strip-components=1
+          echo "$RUNNER_TEMP/dream" >> "$GITHUB_PATH"
+          echo "DREAM_BIN=$RUNNER_TEMP/dream/dream" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.dream/toolchains
+          key: dream-tools-linux-llvm22.1.8-binaryen133
+      - name: Install pinned linking tools
+        run: |
+          bash dream-tooling/scripts/fetch-dev-llvm.sh
+          echo "DREAM_LLVM=$HOME/.dream/toolchains/llvm-22.1.8/bin" >> "$GITHUB_ENV"
+          dreamer toolchain install binaryen
+      - name: Build and test frontend and backend
+        working-directory: singularity
+        run: bash deploy/build-ci.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: singularity-linux-x64
+          path: |
+            singularity/dist/singularity-api-linux-x64.tar.gz
+            singularity/dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: singularity-linux-x64
+          path: dist
+      - name: Publish compiled application
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd dist && sha256sum --check --strict SHA256SUMS && cd ..
+          tag="app-$GITHUB_SHA"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Application release already exists; keeping its immutable assets."
+          else
+            gh release create "$tag" dist/singularity-api-linux-x64.tar.gz dist/SHA256SUMS \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Singularity ${GITHUB_SHA:0:7}" --notes "Tested frontend and backend built with Dream v$DREAM_VERSION." --latest
+          fi
+      - name: Deploy the exact tested commit to Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          test -n "$RENDER_DEPLOY_HOOK" || { echo 'Set the RENDER_DEPLOY_HOOK repository secret.'; exit 1; }
+          curl --fail --silent --show-error --max-time 60 --request POST \
+            "$RENDER_DEPLOY_HOOK&ref=$GITHUB_SHA" > /dev/null
+      - name: Verify live revision and protected API
+        run: |
+          set -euo pipefail
+          base=https://singularity-api-7ptj.onrender.com
+          for attempt in $(seq 1 60); do
+            revision=$(curl --silent --show-error --max-time 20 "$base/api/health" | jq -r '.revision // empty' || true)
+            if [ "$revision" = "$GITHUB_SHA" ]; then
+              test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/")" = 200
+              test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/target/web/main.wasm")" = 200
+              test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/api/catalog")" = 401
+              echo "Frontend and protected API are live at $base ($revision)."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'Render did not serve the tested revision before the deadline.'
+          exit 1

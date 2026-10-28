@@ -3,6 +3,7 @@ module singularity_api;
 import routes;
 import service;
 import access;
+import frontend;
 import system;
 import system.webapi;
 
@@ -40,6 +41,7 @@ async fun main(): void {
             )
         )
     ).unwrap();
+    app.use(Frontend.middleware()).unwrap();
     if !secret.is_empty() {
         app.use(ApiAccess.middleware(secret)).unwrap();
     }

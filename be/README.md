@@ -35,7 +35,7 @@ Caches hold at most 128 search pages (2-minute TTL), 256 metadata records (10-mi
 | `SINGULARITY_ORIGINS` | `http://127.0.0.1:8791,http://localhost:8791` |
 | `SINGULARITY_API_TOKEN` | Empty for loopback development; required on public bindings |
 
-Public bindings require a 32–200-character bearer token. Supply it as `Authorization: Bearer <token>`; URL tokens are rejected. All routes, including `/docs`, require authorization except `GET /api/health` for platform health checks. CORS permits the Authorization header for configured origins. Generate a random token and keep it in host environment settings; never put it in frontend code, Git or an image. `PORT` is supported when `SINGULARITY_PORT` is absent.
+Public bindings require a 32–200-character bearer token. Supply it as `Authorization: Bearer <token>`; URL tokens are rejected. API routes, including `/docs`, require authorization except `GET /api/health` for platform health checks. The packaged frontend's explicit asset allowlist is public and contains no key. Its sign-in page exchanges the entered key for a Secure, HttpOnly, SameSite=Strict cookie scoped to `/api`, with a one-day browser lifetime. `POST /api/session` establishes that cookie, `GET /api/session` checks access, and `DELETE /api/session` clears it. Rotating the environment token invalidates existing cookies. CORS permits the Authorization header for configured origins. Keep the key in host environment settings; never put it in frontend code, Git or an image. `PORT` is supported when `SINGULARITY_PORT` is absent.
 
 The helper's `-ApiPort` sets the API port. The frontend defaults to its current hostname and protocol with port 8792; override with `<meta name="singularity-api" content="https://your-api.example">` in its HTML host and configure the matching CORS origin.
 
@@ -46,6 +46,6 @@ The helper's `-ApiPort` sets the API port. The frontend defaults to its current 
 ./dev.ps1 build -Service backend -Release
 ```
 
-Seven offline backend tests cover ranges/overflow, cache expiry/eviction, permit lifetime, audio selection, error redaction, actual loopback HTTP routing and bearer-token enforcement. Tests are colocated at `src/backend_tests.dream` so Dream imports the source modules directly. The root helper runs them natively and runs shared library tests on Node.
+Nine offline backend tests cover ranges/overflow, cache expiry/eviction, permit lifetime, audio selection, error redaction, actual loopback HTTP routing, bearer-token enforcement, browser cookies and frontend path restrictions. Tests are colocated at `src/backend_tests.dream` so Dream imports the source modules directly. The root helper runs them natively and runs shared library tests on Node.
 
 Likes, playlists and saved track metadata remain browser-local. Accounts, server-side library storage, cloud synchronization, uploads and transcoding are outside this version. YouTube extraction and availability can change independently; failures are explicit in the player.
