@@ -2,6 +2,8 @@
 
 The GCP project `singluarity` was marked for deletion on October 28, 2026 after its Cloud Run service was removed. Render Free is the current deployment target. Keep the Render workspace without a payment method: Render documents that it suspends free services when bandwidth is exhausted instead of charging an overage.
 
+Live backend: https://singularity-api-7ptj.onrender.com. Render service: `srv-dbgvge0u01pc73b5uh50`. The Hobby workspace has no card on file. Curl verified public health (200), anonymous catalog/search/audio/docs rejection (401), and invalid-token rejection (401). The packaged binary passed seven native backend tests and authenticated local curl checks before upload.
+
 ## Package locally
 
 `package.ps1` uses Docker locally and the official, SHA-256-verified Dream v0.0.17 Linux x64 archive. It does not build the compiler. Download `dream-0.0.17-linux-x64.tar.gz` from the Dream GitHub release into `.verification/deploy/`, then run:
