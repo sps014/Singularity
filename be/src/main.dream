@@ -2,16 +2,26 @@ module singularity_api;
 
 import routes;
 import service;
+import access;
 import system;
 import system.webapi;
 
 async fun main(): void {
-    let port = int.parse(System.env("SINGULARITY_PORT").unwrap_or("8792"));
+    let port = int.parse(System.env("SINGULARITY_PORT").unwrap_or(System.env("PORT").unwrap_or("8792")));
     if port.is_err() || port.unwrap() < 1 || port.unwrap() > 65535 {
         System.println("SINGULARITY_PORT must be between 1 and 65535.");
         return;
     }
     let host = System.env("SINGULARITY_HOST").unwrap_or("127.0.0.1");
+    let secret = System.env("SINGULARITY_API_TOKEN").unwrap_or("");
+    if host != "127.0.0.1" && host != "localhost" && host != "::1" && secret.length < 32 {
+        System.println("Public binding requires SINGULARITY_API_TOKEN with at least 32 characters.");
+        return;
+    }
+    if !secret.is_empty() && (secret.length < 32 || secret.length > 200) {
+        System.println("SINGULARITY_API_TOKEN must contain 32–200 characters.");
+        return;
+    }
     let app = WebApp(
         WebAppOptions(
             title: "Singularity Music API",
@@ -25,11 +35,14 @@ async fun main(): void {
                 allow_origins: System.env("SINGULARITY_ORIGINS")
                     .unwrap_or("http://127.0.0.1:8791,http://localhost:8791"),
                 allow_methods: "GET,HEAD,OPTIONS",
-                allow_headers: "Range,Content-Type",
+                allow_headers: "Range,Content-Type,Authorization",
                 expose_headers: "Content-Range,Content-Length,Accept-Ranges,Retry-After"
             )
         )
     ).unwrap();
+    if !secret.is_empty() {
+        app.use(ApiAccess.middleware(secret)).unwrap();
+    }
     System.println("Singularity API: http://" + host + ":" + port.unwrap().to_string() + "/docs");
     let config = ServerConfig(
         limit_concurrency: 64,

@@ -2,6 +2,8 @@
 
 A browser music player with dark acrylic surfaces, a responsive library and Dream-powered audio. The workspace has three source folders: `fe` for the browser app, `be` for the native YouTube API, and `common` for browser-independent models and library rules.
 
+For the packaged backend on Render Free, see [deployment instructions](deploy/README.md). Public deployments require a bearer token; local loopback development remains available without one.
+
 ## Run locally
 
 Use the Dream checkout next to this repository. If it does not yet include the synthetic-future JS-marshaling fix, apply the bundled patch once from this repository:

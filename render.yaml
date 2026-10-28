@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: singularity-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./deploy/render.Dockerfile
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: SINGULARITY_API_TOKEN
+        generateValue: true
+      - key: SINGULARITY_ORIGINS
+        value: https://frontend-not-configured.invalid

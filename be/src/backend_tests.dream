@@ -6,6 +6,7 @@ import permit;
 import mapping;
 import responses;
 import routes;
+import access;
 import system;
 import system.json;
 import system.net;
@@ -121,6 +122,38 @@ async fun api_validates_requests_without_contacting_youtube(): void {
         Assert.is_true(Json.deserialize<JsonValue>(text).is_ok());
         response.close();
     }
+    http.close();
+    app.shutdown();
+    app.wait().await;
+}
+
+@test
+@timeout(30000)
+async fun api_access_rejects_missing_wrong_and_url_tokens(): void {
+    let secret = "test-only-token-0123456789abcdef0123456789";
+    let app = WebApp();
+    app.include_router(MusicRoutes.router()).unwrap();
+    app.use(ApiAccess.middleware(secret)).unwrap();
+    let port = app.listen("127.0.0.1", 0).await.unwrap();
+    let base = "http://127.0.0.1:" + port.to_string();
+    let http = HttpClient(false);
+    for (let path in ["/api/catalog", "/docs", "/api/audio/dQw4w9WgXcQ", "/api/catalog?token=" + secret]) {
+        let request = HttpRequest(HttpMethod.Get, Url.parse(base + path).unwrap());
+        let response = http.send(request).await.unwrap();
+        Assert.eq(response.status, 401);
+        Assert.eq(response.headers.get("WWW-Authenticate").unwrap(), "Bearer");
+        response.close();
+    }
+    for (let token in ["Bearer wrong", "Bearer " + secret, "Bearer " + secret + "x"]) {
+        let request = HttpRequest(HttpMethod.Get, Url.parse(base + "/api/catalog").unwrap());
+        request.headers.set("Authorization", token);
+        let response = http.send(request).await.unwrap();
+        Assert.eq(response.status, token == "Bearer " + secret ? 200 : 401);
+        response.close();
+    }
+    let health = http.send(HttpRequest(HttpMethod.Get, Url.parse(base + "/api/health").unwrap())).await.unwrap();
+    Assert.eq(health.status, 200);
+    health.close();
     http.close();
     app.shutdown();
     app.wait().await;

@@ -1,0 +1,42 @@
+module singularity_api;
+
+import responses;
+import system;
+import system.webapi;
+
+/// Header-only access for a small private deployment. Never accept secrets in URLs.
+public class ApiAccess {
+    public static fun middleware(secret: string): Middleware {
+        let expected = Encoding.utf8_encode("Bearer " + secret);
+        return Middleware(
+            async (borrow ctx: RequestContext, borrow next: Next) => {
+                if ctx.incoming.path == "/api/health"
+                    && (ctx.incoming.method == "GET" || ctx.incoming.method == "HEAD") {
+                    return next.call().await;
+                }
+                let provided = ctx.incoming.header("Authorization").unwrap_or("");
+                if !ApiAccess.matches(expected, provided) {
+                    return api_error("unauthorized", "A valid bearer token is required.", 401)
+                        .set_header("WWW-Authenticate", "Bearer")
+                        .set_header("X-Content-Type-Options", "nosniff");
+                }
+                return next.call().await;
+            }
+        );
+    }
+
+    static fun matches(expected: byte[], provided: string): bool {
+        if provided.length > 256 {
+            return false;
+        }
+        let actual = Encoding.utf8_encode(provided);
+        if actual.length != expected.length {
+            return false;
+        }
+        let difference = 0;
+        for (let index in 0..expected.length) {
+            difference = difference | ((int)expected[index] ^ (int)actual[index]);
+        }
+        return difference == 0;
+    }
+}

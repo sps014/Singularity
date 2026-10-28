@@ -2,3 +2,4 @@
 **/dream_packages/
 **/generated/
 .verification/
+dist/
