@@ -32,14 +32,6 @@ jobs:
           ref: 605214f0cbe924079da7317f33538bb283fff2ea
           path: dream-packages
           persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: sps014/dream
-          ref: v${{ env.DREAM_VERSION }}
-          path: dream-tooling
-          sparse-checkout: scripts/fetch-dev-llvm.sh
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -69,11 +61,10 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.dream/toolchains
-          key: dream-tools-linux-llvm22.1.8-binaryen133
+          key: dream-tools-linux-binaryen133
       - name: Install pinned linking tools
         run: |
-          bash dream-tooling/scripts/fetch-dev-llvm.sh
-          echo "DREAM_LLVM=$HOME/.dream/toolchains/llvm-22.1.8/bin" >> "$GITHUB_ENV"
+          # The verified Dream archive already contains its minimal LLVM and prebuilt runtime.
           dreamer toolchain install binaryen
       - name: Build and test frontend and backend
         working-directory: singularity
