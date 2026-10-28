@@ -38,7 +38,7 @@ Render Free sleeps after 15 minutes without inbound traffic and may take about a
 
 ## Continuous deployment
 
-`.github/workflows/deploy.yml` pins the Dream v0.0.18 release containing the ARC improvements and the dependency repository commit. It downloads the verified compiler archive, uses its bundled minimal LLVM and prebuilt runtime, and installs Binaryen through Dreamer. It runs shared/backend/browser-boundary tests, builds both applications and publishes the compiled package. No compiler is built in this pipeline.
+`.github/workflows/deploy.yml` pins the Dream v0.0.19 release containing the ARC improvements and standalone browser runtime fixes, and the dependency repository commit. It downloads the verified compiler archive, uses its bundled minimal LLVM and prebuilt runtime, and installs Binaryen through Dreamer. It runs shared/backend/browser-boundary tests, builds both applications and publishes the compiled package. No compiler is built in this pipeline.
 
 Pushes to `main` deploy only after successful validation. Pull requests build/test without receiving deployment secrets. `workflow_dispatch` retries the pipeline manually. The deployment check waits until `/api/health` reports the tested commit and checks the frontend, WASM and unauthorized API rejection.
 

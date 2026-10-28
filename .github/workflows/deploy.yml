@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DREAM_VERSION: '0.0.18'
+  DREAM_VERSION: '0.0.19'
+  DREAM_NO_AUTO_INSTALL: '1'
 
 jobs:
   build:
@@ -66,8 +67,6 @@ jobs:
         run: |
           # The verified Dream archive already contains its minimal LLVM and prebuilt runtime.
           dreamer toolchain install binaryen
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends strace
       - name: Build and test frontend and backend
         working-directory: singularity
         run: bash deploy/build-ci.sh
