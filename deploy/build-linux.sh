@@ -10,7 +10,7 @@ export DREAM_BIN=/opt/dream/dream
 export DREAM_NO_AUTO_INSTALL=1
 cd /work/singularity
 dreamer install
-dreamer pack -p singularity_api --target linux-x64
+dreamer pack -p singularity_api --release -O 2 --target linux-x64
 dream test be/src/backend_tests.dream
 mkdir -p /out/api
 cp be/target/pack/linux-x64/singularity_api-linux-x64 /out/api/singularity-api

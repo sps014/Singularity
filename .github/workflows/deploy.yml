@@ -67,6 +67,10 @@ jobs:
         run: |
           # The verified Dream archive already contains its minimal LLVM and prebuilt runtime.
           dreamer toolchain install binaryen
+          if ! command -v qemu-x86_64 >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends qemu-user
+          fi
       - name: Build and test frontend and backend
         working-directory: singularity
         run: bash deploy/build-ci.sh

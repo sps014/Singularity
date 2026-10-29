@@ -50,3 +50,5 @@ The helper's `-ApiPort` sets the API port. The frontend defaults to its current 
 Ten offline backend tests cover ranges/overflow, cache expiry/eviction, permit lifetime, audio selection, error redaction, public loopback HTTP routing, bucket refill/retry behavior, bounded peer storage, global request/egress budgets, forwarded-header spoofing and frontend path restrictions. Tests are colocated at `src/backend_tests.dream` so Dream imports the source modules directly. The root helper runs them natively and runs shared library tests on Node.
 
 Likes, playlists and saved track metadata remain browser-local. Accounts, server-side library storage, cloud synchronization, uploads and transcoding are outside this version. YouTube extraction and availability can change independently; failures are explicit in the player.
+
+Linux deployment packages use `--release -O 2`: Dream's O3 host builds tune instructions to the build CPU, which may differ from Render's CPU. CI starts the exact packaged executable under QEMU's baseline `qemu64` CPU and checks public assets, catalog access and throttling before publishing.

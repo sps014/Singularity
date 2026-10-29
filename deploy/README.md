@@ -48,3 +48,5 @@ Set `RENDER_DEPLOY_HOOK` under GitHub repository Settings → Secrets and variab
 ```
 
 Keep Render auto-deploy off so it cannot start before CI publishes the matching package.
+
+Linux deployment packages use `--release -O 2`: Dream's O3 host builds tune instructions to the build CPU, which may differ from Render's CPU. CI starts the exact packaged executable under QEMU's baseline `qemu64` CPU and checks public assets, catalog access and throttling before publishing.
