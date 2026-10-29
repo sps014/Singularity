@@ -1,0 +1,37 @@
+module singularity_api;
+
+import system;
+
+/// Integer token bucket with caller-supplied time for deterministic admission and retry behavior.
+public class RateBucket {
+    capacity: long;
+    per_minute: long;
+    credits: long;
+    public seen: long;
+
+    public constructor(capacity: long, per_minute: long, now: long) {
+        this.capacity = capacity;
+        this.per_minute = per_minute;
+        this.credits = capacity * 60000L;
+        this.seen = now;
+    }
+
+    /// Consumes units or returns the seconds until sufficient capacity is available.
+    public fun take(units: long, now: long): long {
+        let elapsed = now > this.seen ? now - this.seen : 0L;
+        let full_after = this.capacity * 60000L / this.per_minute + 1L;
+        if elapsed >= full_after {
+            this.credits = this.capacity * 60000L;
+        } else {
+            this.credits = (this.credits + elapsed * this.per_minute).min(this.capacity * 60000L);
+        }
+        this.seen = now > this.seen ? now : this.seen;
+        let needed = units * 60000L;
+        if needed <= this.credits {
+            this.credits = this.credits - needed;
+            return 0L;
+        }
+        let delay_ms = (needed - this.credits + this.per_minute - 1L) / this.per_minute;
+        return (delay_ms + 999L) / 1000L;
+    }
+}

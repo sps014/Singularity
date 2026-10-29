@@ -8,7 +8,5 @@ services:
     healthCheckPath: /api/health
     autoDeployTrigger: off
     envVars:
-      - key: SINGULARITY_API_TOKEN
-        generateValue: true
       - key: SINGULARITY_ORIGINS
-        value: https://frontend-not-configured.invalid
+        value: https://singularity-api-7ptj.onrender.com

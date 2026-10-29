@@ -1,8 +1,8 @@
-# Render Free backend
+# Render Free music player
 
 The GCP project `singluarity` was marked for deletion on October 28, 2026 after its Cloud Run service was removed. Render Free is the current deployment target. Keep the Render workspace without a payment method: Render documents that it suspends free services when bandwidth is exhausted instead of charging an overage.
 
-Live backend: https://singularity-api-7ptj.onrender.com. Render service: `srv-dbgvge0u01pc73b5uh50`. The Hobby workspace has no card on file. Curl verified public health (200), anonymous catalog/search/audio/docs rejection (401), and invalid-token rejection (401). The packaged binary passed seven native backend tests and authenticated local curl checks before upload.
+Live app: https://singularity-api-7ptj.onrender.com. Render service: `srv-dbgvge0u01pc73b5uh50`. The frontend and API share this origin. Access is public, with no key prompt; the backend enforces request, response-bandwidth and concurrency limits. See [backend protections](../be/README.md) for defaults and limits.
 
 ## Package locally
 
@@ -16,7 +16,7 @@ The output contains a relocatable Linux executable and its required Dream host l
 
 ## Deploy
 
-`render.yaml` declares the free service with a generated bearer token. Alternatively, select the public repository in the Render dashboard and set:
+`render.yaml` declares the public free service. Alternatively, select the public repository in the Render dashboard and set:
 
 | Setting | Value |
 | --- | --- |
@@ -25,22 +25,21 @@ The output contains a relocatable Linux executable and its required Dream host l
 | Region | Singapore |
 | Dockerfile | `deploy/render.Dockerfile` |
 | Health check | `/api/health` |
-| `SINGULARITY_API_TOKEN` | Generate a random secret of at least 32 characters |
-| `SINGULARITY_ORIGINS` | `https://frontend-not-configured.invalid` until the frontend exists |
+| `SINGULARITY_ORIGINS` | `https://singularity-api-7ptj.onrender.com` |
 
 The Dockerfile uses Render's `RENDER_GIT_COMMIT` build argument to download the matching `app-<commit>` release and verifies its SHA-256 checksum. Render installs runtime dependencies and assembles the container; it never compiles Dream or the application. CI publishes the release only after all tests and builds pass, then triggers that exact commit.
 
-The app binds to Render's `PORT` with `SINGULARITY_HOST=0.0.0.0`. Missing/short secrets prevent public startup. API requests require a bearer token or the private browser cookie, except GET/HEAD `/api/health`. The frontend is packaged under `public/` in the same service and uses same-origin API/audio URLs. On the sign-in page, enter the existing Render `SINGULARITY_API_TOKEN` value; it is never embedded in public assets. Sign-out clears the HttpOnly cookie. This is private access for a small shared deployment, not individual user accounts or cloud synchronization.
+The app binds to Render's `PORT` with `SINGULARITY_HOST=0.0.0.0`. The frontend is packaged under `public/` and uses same-origin API/audio URLs. No API token or browser session is required; any old `SINGULARITY_API_TOKEN` environment value is unused. Likes and playlists stay in local browser storage.
 
-The packaged Dream HTTP host intentionally omits browser credentials. `fe/session.js` enables cookies only for the packaged deployment's same-origin `/api/` calls. External audio and image requests retain their original credential settings. Test that boundary with `node --test fe/tests/session.test.mjs`.
+The public guard returns 429 with retry guidance for excessive request volume or response bandwidth. Search/audio cost more admission units than static pages. Existing caches, fixed video-ID routes, 1 MiB audio ranges and smaller concurrency ceilings bound upstream work and memory. These in-memory limits reset on process restart; they are not a persistent usage quota. Forwarded headers are ignored rather than trusting client-provided IP addresses. Proxy peers can share a throttle bucket.
 
 Render Free sleeps after 15 minutes without inbound traffic and may take about a minute to wake. There is no persistent backend library state; likes and playlists remain in the browser. Excess bandwidth and heavy external traffic may suspend the service. See [Render Free](https://render.com/docs/free) for the current rules.
 
 ## Continuous deployment
 
-`.github/workflows/deploy.yml` pins the Dream v0.0.19 release containing the ARC improvements and standalone browser runtime fixes, and the dependency repository commit. It downloads the verified compiler archive, uses its bundled minimal LLVM and prebuilt runtime, and installs Binaryen through Dreamer. It runs shared/backend/browser-boundary tests, builds both applications and publishes the compiled package. No compiler is built in this pipeline.
+`.github/workflows/deploy.yml` pins the Dream v0.0.19 release containing the ARC improvements and standalone browser runtime fixes, and the dependency repository commit. It downloads the verified compiler archive, uses its bundled minimal LLVM and prebuilt runtime, and installs Binaryen through Dreamer. It runs shared and backend tests, builds both applications and publishes the compiled package. No compiler is built in this pipeline.
 
-Pushes to `main` deploy only after successful validation. Pull requests build/test without receiving deployment secrets. `workflow_dispatch` retries the pipeline manually. The deployment check waits until `/api/health` reports the tested commit and checks the frontend, WASM and unauthorized API rejection.
+Pushes to `main` deploy only after successful validation. Pull requests build/test without receiving deployment secrets. `workflow_dispatch` retries the pipeline manually. The deployment check waits until `/api/health` reports the tested commit and checks the frontend, WASM and public catalog access.
 
 Set `RENDER_DEPLOY_HOOK` under GitHub repository Settings → Secrets and variables → Actions. To save it without displaying the value in terminal output or chat:
 
@@ -48,4 +47,4 @@ Set `RENDER_DEPLOY_HOOK` under GitHub repository Settings → Secrets and variab
 ./deploy/save-render-hook.ps1
 ```
 
-The player access token stays in Render environment settings and is not required by the build. Keep Render auto-deploy off so it cannot start before CI publishes the matching package.
+Keep Render auto-deploy off so it cannot start before CI publishes the matching package.

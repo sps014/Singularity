@@ -112,7 +112,7 @@ jobs:
           test -n "$RENDER_DEPLOY_HOOK" || { echo 'Set the RENDER_DEPLOY_HOOK repository secret.'; exit 1; }
           curl --fail --silent --show-error --max-time 60 --request POST \
             "$RENDER_DEPLOY_HOOK&ref=$GITHUB_SHA" > /dev/null
-      - name: Verify live revision and protected API
+      - name: Verify live revision and public API
         run: |
           set -euo pipefail
           base=https://singularity-api-7ptj.onrender.com
@@ -121,8 +121,8 @@ jobs:
             if [ "$revision" = "$GITHUB_SHA" ]; then
               test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/")" = 200
               test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/target/web/main.wasm")" = 200
-              test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/api/catalog")" = 401
-              echo "Frontend and protected API are live at $base ($revision)."
+              test "$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$base/api/catalog")" = 200
+              echo "Frontend and rate-limited public API are live at $base ($revision)."
               exit 0
             fi
             sleep 15

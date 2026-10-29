@@ -32,9 +32,9 @@ public class Frontend {
 
     public static fun mime(path: string): string {
         if path == "/index.html" { return "text/html; charset=utf-8"; }
-        if path == "/bootstrap.js" || path == "/session.js" || path == "/target/web/main.web.runtime.js" { return "text/javascript; charset=utf-8"; }
+        if path == "/bootstrap.js" || path == "/target/web/main.web.runtime.js" { return "text/javascript; charset=utf-8"; }
         if path == "/target/web/main.wasm" { return "application/wasm"; }
-        for (let name in ["tokens", "layout", "components", "access"]) {
+        for (let name in ["tokens", "layout", "components"]) {
             if path == "/styles/" + name + ".css" { return "text/css; charset=utf-8"; }
         }
         for (let name in ["bloom", "dunes", "hero", "mark", "orbit", "tide"]) {

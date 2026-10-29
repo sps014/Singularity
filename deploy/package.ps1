@@ -26,7 +26,7 @@ foreach ($member in @("fe", "be", "common")) {
     New-Item -ItemType Directory -Force $destination | Out-Null
     Copy-Item -LiteralPath "$root/$member/dream.toml", "$root/$member/src" -Destination $destination -Recurse
 }
-Copy-Item -LiteralPath "$root/fe/index.html", "$root/fe/bootstrap.js", "$root/fe/session.js", "$root/fe/styles", "$root/fe/assets" -Destination "$staging/singularity/fe/" -Recurse
+Copy-Item -LiteralPath "$root/fe/index.html", "$root/fe/bootstrap.js", "$root/fe/styles", "$root/fe/assets" -Destination "$staging/singularity/fe/" -Recurse
 New-Item -ItemType Directory -Force "$staging/singularity/fe/target/web" | Out-Null
 Copy-Item -LiteralPath "$root/fe/target/web/main.wasm", "$root/fe/target/web/main.web.runtime.js" -Destination "$staging/singularity/fe/target/web/"
 foreach ($package in @("youtube_explode", "markup", "sha1")) {

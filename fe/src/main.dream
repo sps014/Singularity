@@ -9,19 +9,9 @@ import player_view;
 import playback;
 import storage;
 import events;
-import session;
 
 async fun main(): void {
-    if private_deployment() && !session_ready().await {
-        render_sign_in();
-        // Browser callbacks remain live while the guest's main future is running.
-        while true {
-            Time.delay(60000).await;
-        }
-    }
     render_shell();
-    el("session-logout").hidden = !private_deployment();
-    el("session-logout").addEventListener("click", on_sign_out);
     restore_library();
     make_transport(el("panel-controls"));
     make_transport(el("bar-controls"));

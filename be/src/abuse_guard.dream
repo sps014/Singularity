@@ -1,0 +1,89 @@
+module singularity_api;
+
+import rate_bucket;
+import responses;
+import frontend;
+import system;
+import system.collections;
+import system.webapi;
+
+/// Bounded, process-local limits on the cooperative request scheduler.
+public class AbuseGuard {
+    requests: RateBucket;
+    bandwidth: RateBucket;
+    peers: Map<string, RateBucket>;
+    order: List<string>;
+    peer_capacity: int;
+
+    public constructor(now: long, peer_capacity: int = 1024) {
+        this.requests = RateBucket(240L, 120L, now);
+        this.bandwidth = RateBucket(33554432L, 8388608L, now);
+        this.peers = Map<string, RateBucket>();
+        this.order = List<string>();
+        this.peer_capacity = peer_capacity;
+    }
+
+    public fun admit(peer: string, path: string, now: long): long {
+        let cost = path == "/" || path == "/api/catalog" || Frontend.mime(path) != "" ? 1L
+            : (path.starts_with("/api/tracks/") || path.starts_with("/api/audio/") ? 4L : 6L);
+        let wait = this.requests.take(cost, now);
+        if wait > 0L { return wait; }
+        if !this.peers.contains(peer) {
+            let index = 0;
+            while index < this.order.length {
+                let key = this.order[index];
+                if this.peers[key].seen <= now - 120000L {
+                    this.peers.remove(key);
+                    this.order.remove_at(index);
+                } else {
+                    index = index + 1;
+                }
+            }
+            // Never evict an active bucket: rotating identities must not reset admission limits.
+            if this.order.length >= this.peer_capacity { return 60L; }
+            this.peers[peer] = RateBucket(120L, 120L, now);
+            this.order.push(peer);
+        }
+        return this.peers[peer].take(cost, now);
+    }
+
+    public fun charge_bytes(bytes: long, now: long): long {
+        return this.bandwidth.take(bytes, now);
+    }
+
+    public static fun limited(seconds: long): HttpOutgoing {
+        return api_error("rate_limited", "Please slow down and retry shortly.", 429)
+            .set_header("Retry-After", seconds.to_string())
+            .set_header("Cache-Control", "no-store");
+    }
+
+    public static fun middleware(): Middleware {
+        let guard = AbuseGuard(DateTime.utc_now().epoch_millis);
+        return Middleware(async (borrow ctx: RequestContext, borrow next: Next) => {
+            let request = ctx.incoming;
+            if request.path == "/api/health" && (request.method == "GET" || request.method == "HEAD") {
+                return next.call().await;
+            }
+            let wait = guard.admit(request.client_host, request.path, DateTime.utc_now().epoch_millis);
+            if wait > 0L { return AbuseGuard.limited(wait); }
+            if request.method != "GET" && request.method != "HEAD" {
+                return HttpOutgoing.empty(405).set_header("Allow", "GET, HEAD");
+            }
+            if request.path.length > 256 || request.query.length > 8192 {
+                return api_error("invalid_input", "Request URL is too long.", 414);
+            }
+            if request.header("Content-Length").unwrap_or("0") != "0"
+                || request.header("Transfer-Encoding").is_some() {
+                return api_error("invalid_input", "Request bodies are not accepted.", 413);
+            }
+            let response = next.call().await;
+            if request.method != "HEAD" {
+                let size = response.body_bytes.length > 0 ? response.body_bytes.length
+                    : Encoding.utf8_encode(response.body).length;
+                let delay = guard.charge_bytes((long)size, DateTime.utc_now().epoch_millis);
+                if delay > 0L { return AbuseGuard.limited(delay); }
+            }
+            return response;
+        });
+    }
+}

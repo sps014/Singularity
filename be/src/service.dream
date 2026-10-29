@@ -22,7 +22,7 @@ public class MusicService {
         this.searches = Cache<string>(128, 120000L);
         this.videos = Cache<string>(256, 600000L);
         this.streams = Cache<StreamInfo>(64, 60000L);
-        this.slots = Semaphore(8);
+        this.slots = Semaphore(4);
     }
 
     public async fun search(

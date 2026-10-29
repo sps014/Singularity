@@ -17,9 +17,9 @@ cp be/target/pack/linux-x64/singularity_api-linux-x64 /out/api/singularity-api
 # The compiler bundles the capability libraries beside the executable.
 find be/target/pack/linux-x64 -maxdepth 1 -name '*.so*' -exec cp -P '{}' /out/api/ ';'
 mkdir -p /out/api/public/target/web
-cp fe/index.html fe/bootstrap.js fe/session.js /out/api/public/
+cp fe/index.html fe/bootstrap.js /out/api/public/
 cp -R fe/styles fe/assets /out/api/public/
 cp fe/target/web/main.wasm fe/target/web/main.web.runtime.js /out/api/public/target/web/
-sed -i 's|<head>|<head><meta name="singularity-api" content="same-origin"><meta name="singularity-session" content="required"><link rel="stylesheet" href="./styles/access.css">|' /out/api/public/index.html
+sed -i 's|<head>|<head><meta name="singularity-api" content="same-origin">|' /out/api/public/index.html
 chmod 755 /out/api/singularity-api
 ldd /out/api/singularity-api

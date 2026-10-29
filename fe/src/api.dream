@@ -102,7 +102,7 @@ async fun fetch_search(generation: int, query: string, continuation: string): vo
     if response.status != 200 || text.is_err() {
         app.search_error = response.status
             == 429
-            ? "YouTube is busy. Try again shortly." : "YouTube search could not finish. Try again.";
+            ? "Request limit reached. Wait a moment and try again." : "YouTube search could not finish. Try again.";
     } else {
         let parsed = Json.deserialize<JsonValue>(text.unwrap());
         if parsed.is_ok() {

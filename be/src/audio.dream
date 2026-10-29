@@ -9,7 +9,7 @@ import system.collections;
 import system.webapi;
 import youtube_explode;
 
-let audio_slots = Semaphore(16);
+let audio_slots = Semaphore(4);
 
 public async fun audio_response(
     id: VideoId,
