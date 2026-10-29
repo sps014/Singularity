@@ -1,0 +1,23 @@
+module singularity;
+
+import stream_error;
+import system.testing;
+
+@test
+fun playback_failures_explain_provider_rejections(): void {
+    Assert.is_true(stream_failure_message(429, "youtube_rate_limited").contains("rate limiting this server"));
+    Assert.is_true(stream_failure_message(429, "rate_limited").contains("Too many requests"));
+    Assert.is_true(stream_failure_message(422, "login_required").contains("verification"));
+    Assert.is_true(stream_failure_message(422, "region_restricted").contains("region"));
+    Assert.is_true(stream_failure_message(422, "unavailable").contains("playable audio"));
+    Assert.is_true(stream_failure_message(503, "busy").contains("busy"));
+}
+
+@test
+fun retry_headers_are_bounded_and_have_safe_defaults(): void {
+    Assert.eq(playback_retry_seconds(429, "30"), 30L);
+    Assert.eq(playback_retry_seconds(429, ""), 30L);
+    Assert.eq(playback_retry_seconds(502, "garbage"), 5L);
+    Assert.eq(playback_retry_seconds(429, "-4"), 1L);
+    Assert.eq(playback_retry_seconds(429, "999999"), 300L);
+}

@@ -4,6 +4,7 @@ import common;
 
 import state;
 import dom;
+import playback_failures;
 import system;
 
 internal fun make_transport(parent: js): void {
@@ -148,5 +149,11 @@ internal fun refresh_player(): void {
             let dismiss = button("dismiss", "Dismiss message", "close", "icon-button");
             notice.appendChild(dismiss);
         }
+    }
+    let retry: js = notice.querySelector("[data-action='retry']");
+    if !retry.is_null() {
+        let wait = playback_retry_wait(app.selected);
+        retry.disabled = wait > 0L;
+        retry.textContent = wait > 0L ? "Retry in " + wait.to_string() + "s" : "Retry";
     }
 }

@@ -1,4 +1,5 @@
 module singularity;
+import playback_failures;
 
 import common;
 
@@ -308,5 +309,6 @@ internal fun on_unload(event: js): void {
         return;
     }
     state().alive = false;
+    cancel_failure_probe();
     state().audio.close();
 }

@@ -1,0 +1,84 @@
+module singularity;
+
+import common;
+import state;
+import player_view;
+import stream_error;
+import system;
+import system.net;
+import system.json;
+import system.collections;
+
+class StreamFailure {
+    public message: string;
+    public until: long;
+    public constructor(message: string, until: long) {
+        this.message = message;
+        this.until = until;
+    }
+}
+
+let failure_http = HttpClient(false);
+let failures = Map<string, StreamFailure>();
+let diagnosed_generation = -1;
+let failure_cancel: Option<CancellationSource> = Option.None;
+
+internal fun cancel_failure_probe(): void {
+    if failure_cancel.is_some() { failure_cancel.unwrap().cancel(); }
+    failure_cancel = Option.None;
+}
+
+internal fun playback_retry_wait(id: string): long {
+    let cached = failures.get(id);
+    if cached.is_none() { return 0L; }
+    let remaining = cached.unwrap().until - DateTime.utc_now().epoch_millis;
+    if remaining <= 0L { failures.remove(id); return 0L; }
+    return (remaining + 999L) / 1000L;
+}
+
+internal fun restore_playback_failure(id: string): bool {
+    if playback_retry_wait(id) == 0L { return false; }
+    state().notice = failures[id].message;
+    state().failed = true;
+    return true;
+}
+
+// HTML media events omit HTTP status and JSON error bodies. Probe only after a
+// failure, once per playback generation; never preflight successful playback.
+internal async fun describe_playback_failure(generation: int, track: Track): void {
+    if !track.id.starts_with("yt:") || generation != state().generation
+        || diagnosed_generation == generation { return; }
+    diagnosed_generation = generation;
+    let source = CancellationSource();
+    failure_cancel = Option.Some(source);
+    let parsed = Url.parse(track.url);
+    if parsed.is_err() { return; }
+    let request = HttpRequest(HttpMethod.Get, parsed.unwrap());
+    request.headers.set("Range", "bytes=0-0");
+    let received = failure_http.send(request, HttpOptions(timeout_ms: 5000),
+        Option.Some(source.token)).await;
+    if received.is_err() { return; }
+    let response = received.unwrap();
+    let status = response.status;
+    let retry = playback_retry_seconds(status, response.headers.get("Retry-After").unwrap_or(""));
+    if status < 400 { response.close(); return; }
+    let text = response.read_text(8192, Option.Some(source.token)).await;
+    response.close();
+    if generation != state().generation || !state().failed || text.is_err() { return; }
+    let code = "";
+    let body = Json.deserialize<JsonValue>(text.unwrap());
+    if body.is_ok() {
+        let error = body.unwrap().get("error").unwrap_or(JsonValue.null());
+        code = error.get("code").unwrap_or(JsonValue.null()).as_string().unwrap_or("");
+        if status == 429 && error.get("message").unwrap_or(JsonValue.null())
+            .as_string().unwrap_or("").starts_with("YouTube is rate limiting") {
+            code = "youtube_rate_limited";
+        }
+    }
+    let message = stream_failure_message(status, code);
+    // Keep the session cache bounded, including failures from many search results.
+    if failures.length >= 64 { failures.clear(); }
+    failures[track.id] = StreamFailure(message, DateTime.utc_now().epoch_millis + retry * 1000L);
+    state().notice = message;
+    refresh_player();
+}

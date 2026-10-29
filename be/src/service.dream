@@ -15,6 +15,7 @@ public class MusicService {
     searches: Cache<string>;
     videos: Cache<string>;
     streams: Cache<StreamInfo>;
+    audio_limits: Cache<YoutubeError>;
     slots: Semaphore;
 
     public constructor() {
@@ -22,6 +23,7 @@ public class MusicService {
         this.searches = Cache<string>(128, 120000L);
         this.videos = Cache<string>(256, 600000L);
         this.streams = Cache<StreamInfo>(64, 300000L);
+        this.audio_limits = Cache<YoutubeError>(64, 30000L);
         this.slots = Semaphore(4);
     }
 
@@ -91,6 +93,8 @@ public class MusicService {
         if cached.is_some() {
             return Result.Ok(cached.unwrap());
         }
+        let limited = lifetime[0].audio_limits.get(id.value, DateTime.utc_now().epoch_millis);
+        if limited.is_some() { return Result.Err(limited.unwrap()); }
         if !lifetime[0].slots.try_acquire() {
             return Result.Err(YoutubeError("busy", "upstream capacity reached"));
         }
@@ -98,6 +102,9 @@ public class MusicService {
         let result = lifetime[0].client.streams.get_manifest(id, token, Option.Some(StreamKind.AudioOnly)).await;
         permit.release();
         if result.is_err() {
+            if result.unwrap_err().code() == "rate_limited" {
+                lifetime[0].audio_limits.put(id.value, result.unwrap_err(), DateTime.utc_now().epoch_millis);
+            }
             return Result.Err(result.unwrap_err());
         }
         let stream = choose_audio(result.unwrap());

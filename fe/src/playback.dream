@@ -4,6 +4,7 @@ import common;
 
 import state;
 import player_view;
+import playback_failures;
 import system;
 import system.audio;
 import system.collections;
@@ -12,18 +13,27 @@ internal async fun start_selected(): void {
     let app = state();
     app.generation = app.generation + 1;
     let generation = app.generation;
+    cancel_failure_probe();
     let volume = app.audio.volume;
     let muted = app.audio.muted;
     app.audio.close();
     let track = find_track(app.catalog, app.selected).unwrap();
-    let audio = Audio(track.url);
-    app.audio = audio;
-    audio.volume = volume;
-    audio.muted = muted;
     app.loading = true;
     app.scrubbing = "";
     app.failed = false;
     app.notice = "";
+    if restore_playback_failure(track.id) {
+        app.audio = Audio();
+        app.audio.volume = volume;
+        app.audio.muted = muted;
+        app.loading = false;
+        render_player();
+        return;
+    }
+    let audio = Audio(track.url);
+    app.audio = audio;
+    audio.volume = volume;
+    audio.muted = muted;
     render_player();
     let started = audio.play().await;
     if generation != app.generation {
@@ -33,6 +43,7 @@ internal async fun start_selected(): void {
     if started.is_err() {
         app.failed = true;
         app.notice = "This stream could not start. Check your connection and try again.";
+        Promise.start(describe_playback_failure(generation, track));
     }
     refresh_player();
 }
@@ -41,6 +52,7 @@ internal async fun toggle_playback(): void {
     let app = state();
     if app.loading {
         app.generation = app.generation + 1;
+        cancel_failure_probe();
         let muted = app.audio.muted;
         app.audio.close();
         let volume = app.audio.volume;
@@ -120,8 +132,14 @@ internal async fun audio_loop(): void {
                 }
                 AudioEvent.Error(_, error, operation, _) => {
                     if error.code() != "ECANCELLED" {
-                        app.notice = operation + ": " + error.message();
-                        app.failed = operation == "play" || operation == "load";
+                        if !app.failed {
+                            app.notice = operation + ": " + error.message();
+                            app.failed = operation == "play" || operation == "load";
+                        }
+                        if app.failed {
+                            Promise.start(describe_playback_failure(app.generation,
+                                find_track(app.catalog, app.selected).unwrap()));
+                        }
                     }
                 }
                 _ => {}

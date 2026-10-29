@@ -23,6 +23,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Shared tests failed" }
         & $env:DREAM_BIN test be/src/backend_tests.dream
         if ($LASTEXITCODE -ne 0) { throw "Backend tests failed" }
+        & $env:DREAM_BIN test fe/src/stream_error_tests.dream
+        if ($LASTEXITCODE -ne 0) { throw "Playback error tests failed" }
         return
     }
     if ($Command -eq "run" -or $Command -eq "build") {

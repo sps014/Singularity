@@ -59,6 +59,10 @@ Discover the catalog, filter by mood, or search songs, artists, albums and playl
 
 On mobile, tap the mini-player to open the full player. On tablet, the queue button opens the player panel. Space toggles playback outside editable controls; `/` focuses search and Escape closes the expanded player. Playback starts with user interaction as required by browsers.
 
+When a searched track fails, the player checks the API error once and explains rate limits,
+account verification and regional availability. Retry respects the API Retry-After cooldown.
+YouTube can reject extraction requests from the hosting server; playback of every search result is not guaranteed.
+
 Likes and playlists are saved under `singularity.library.v1` in this browser's local storage. No account or cloud synchronization is used. Unknown track references are discarded on restore; unreadable data starts an empty library. If browser storage is blocked or full, the app remains usable for the session. The first visit includes two editable example playlists.
 
 ## Code boundaries

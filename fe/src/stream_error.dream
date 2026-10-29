@@ -1,0 +1,22 @@
+module singularity;
+
+import system;
+
+internal fun stream_failure_message(status: int, code: string): string {
+    if status == 429 {
+        return code == "youtube_rate_limited"
+            ? "YouTube is rate limiting this server. This track cannot play right now; demo tracks may still play."
+            : "Too many requests. Wait before retrying playback.";
+    }
+    if code == "login_required" { return "YouTube requires account verification for this track."; }
+    if code == "region_restricted" { return "YouTube does not offer this track in the server's region."; }
+    if status == 422 { return "YouTube did not provide a playable audio stream for this track."; }
+    if status == 503 { return "The music service is busy. Try again shortly."; }
+    return "This stream could not start. Check your connection or try another track.";
+}
+
+internal fun playback_retry_seconds(status: int, header: string): long {
+    let parsed = long.parse(header);
+    let seconds = parsed.is_ok() ? parsed.unwrap() : (status == 429 ? 30L : 5L);
+    return seconds < 1L ? 1L : (seconds > 300L ? 300L : seconds);
+}
