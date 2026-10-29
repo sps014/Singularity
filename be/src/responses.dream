@@ -31,6 +31,12 @@ public fun upstream_error(error: YoutubeError): HttpOutgoing {
     if code == "unavailable" || code == "unplayable" || code == "purchase_required" {
         return api_error(code, "This video has no available audio stream.", 422);
     }
+    if code == "login_required" {
+        return api_error(code, "YouTube requires account verification for this video.", 422);
+    }
+    if code == "region_restricted" {
+        return api_error(code, "YouTube does not make this video available in the server's region.", 422);
+    }
     if code == "cancelled" {
         return api_error(code, "Request cancelled.", 408);
     }

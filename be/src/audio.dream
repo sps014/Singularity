@@ -49,7 +49,7 @@ public async fun audio_response(
     let result = read_range(info, parsed.unwrap(), token).await;
     permit.release();
     if result.is_err() {
-        music().invalidate_stream(id.value);
+        if result.unwrap_err().code() != "cancelled" { music().invalidate_stream(id.value); }
         return upstream_error(result.unwrap_err());
     }
     let range = parsed.unwrap();

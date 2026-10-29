@@ -98,6 +98,60 @@ fun upstream_errors_hide_sensitive_details(): void {
     Assert.is_true(!response.body.contains("secret"));
     Assert.eq(upstream_error(YoutubeError("rate_limited", "")).status, 429);
     Assert.eq(upstream_error(YoutubeError("busy", "")).status, 503);
+    for (let code in ["login_required", "region_restricted"]) {
+        let rejected = upstream_error(YoutubeError(code, "secret cookie and signed URL"));
+        Assert.eq(rejected.status, 422);
+        Assert.is_true(!rejected.body.contains("secret"));
+    }
+}
+
+let stream_fixture_base = "";
+let stream_fixture_video_probes = 0;
+
+@router("")
+class StreamFixture {
+    @get("/sw.js_data")
+    public static fun visitor(): string {
+        return "[[null,null,[[[null,null,null,null,null,null,null,null,null,null,null,null,null,\"fixture-visitor\"]]]]]";
+    }
+
+    @post("/youtubei/v1/player")
+    public static fun player(): HttpOutgoing {
+        let response = Json.deserialize<JsonValue>("{\"playabilityStatus\":{\"status\":\"OK\"},\"videoDetails\":{},\"streamingData\":{\"adaptiveFormats\":[{\"itag\":140,\"url\":\"http://localhost/audio\",\"mimeType\":\"audio/mp4; codecs=\\\"mp4a.40.2\\\"\",\"bitrate\":128000,\"contentLength\":\"1000\"},{\"itag\":137,\"url\":\"http://localhost/video\",\"mimeType\":\"video/mp4; codecs=\\\"avc1.640028\\\"\",\"bitrate\":1000000,\"contentLength\":\"1000\",\"width\":1920,\"height\":1080,\"fps\":30,\"qualityLabel\":\"1080p\"}]}}").unwrap();
+        response["streamingData"]["adaptiveFormats"].at(0).unwrap()["url"] = JsonValue.from_string(stream_fixture_base + "/audio");
+        response["streamingData"]["adaptiveFormats"].at(1).unwrap()["url"] = JsonValue.from_string(stream_fixture_base + "/video");
+        return HttpOutgoing.json_text(Json.serialize(response));
+    }
+
+    @get("/audio")
+    public static fun audio(): string { return "ok"; }
+
+    @get("/video")
+    public static fun video(): HttpOutgoing {
+        stream_fixture_video_probes++;
+        return HttpOutgoing.text("video probe should not be needed", 503);
+    }
+}
+
+@test
+@timeout(30000)
+async fun audio_manifest_does_not_probe_unrelated_video_formats(): void {
+    let app = WebApp();
+    app.include_router(StreamFixture.router()).unwrap();
+    let port = app.listen("127.0.0.1", 0).await.unwrap();
+    stream_fixture_base = "http://127.0.0.1:" + port.to_string();
+    stream_fixture_video_probes = 0;
+    let http = HttpClient(false);
+    let client = StreamClient(http, stream_fixture_base);
+    let result = client.get_manifest(VideoId.parse("9udS0mpi1L4").unwrap(), kind: Option.Some(StreamKind.AudioOnly)).await;
+    http.close();
+    app.shutdown();
+    app.wait().await;
+    stream_fixture_base = "";
+    Assert.is_true(result.is_ok());
+    Assert.eq(result.unwrap().streams.length, 1);
+    Assert.eq(result.unwrap().streams[0].itag, 140);
+    Assert.eq(stream_fixture_video_probes, 0);
 }
 
 @test

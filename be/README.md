@@ -26,7 +26,7 @@ Audio supports closed, open-ended and suffix `Range` requests. Responses are at 
 
 Errors use `{"error":{"code":"...","message":"..."}}`: invalid input `400`, unavailable audio `422`, rate limiting `429`, upstream failure `502`, capacity exhaustion `503`. Admission and rate-limit responses include `Retry-After`. Generated parameter validation uses WebApp's standard `422` format. Upstream error text is not reflected because it can include signed URLs or cookies.
 
-Caches hold at most 128 search pages (2-minute TTL), 256 metadata records (10-minute TTL), and 64 streams (1-minute TTL). Oldest entries are evicted; signed URLs are never persisted. At most 4 uncached upstream operations and 4 range reads run concurrently; excess work receives `503` without blocking the scheduler. Permits release on completion and cancellation. Request cancellation reaches YouTube HTTP operations, which use the package's deadlines and retry policy. The server caps connections/in-flight requests at 32, keep-alive at 5 seconds and graceful shutdown at 5 seconds; forwarded proxy headers are disabled.
+Caches hold at most 128 search pages (2-minute TTL), 256 metadata records (10-minute TTL), and 64 streams (5-minute TTL). Oldest entries are evicted; signed URLs are never persisted. At most 4 uncached upstream operations and 4 range reads run concurrently; excess work receives `503` without blocking the scheduler. Permits release on completion and cancellation. Request cancellation reaches YouTube HTTP operations, which use the package's deadlines and retry policy. The server caps connections/in-flight requests at 32, keep-alive at 5 seconds and graceful shutdown at 5 seconds; forwarded proxy headers are disabled.
 
 | Environment variable | Default |
 | --- | --- |
@@ -47,7 +47,7 @@ The helper's `-ApiPort` sets the API port. The frontend defaults to its current 
 ./dev.ps1 build -Service backend -Release
 ```
 
-Ten offline backend tests cover ranges/overflow, cache expiry/eviction, permit lifetime, audio selection, error redaction, public loopback HTTP routing, bucket refill/retry behavior, bounded peer storage, global request/egress budgets, forwarded-header spoofing and frontend path restrictions. Tests are colocated at `src/backend_tests.dream` so Dream imports the source modules directly. The root helper runs them natively and runs shared library tests on Node.
+Eleven offline backend tests cover ranges/overflow, cache expiry/eviction, permit lifetime, audio selection, error redaction, audio-only HTTP probing, public loopback HTTP routing, bucket refill/retry behavior, bounded peer storage, global request/egress budgets, forwarded-header spoofing and frontend path restrictions. Tests are colocated at `src/backend_tests.dream` so Dream imports the source modules directly. The root helper runs them natively and runs shared library tests on Node.
 
 Likes, playlists and saved track metadata remain browser-local. Accounts, server-side library storage, cloud synchronization, uploads and transcoding are outside this version. YouTube extraction and availability can change independently; failures are explicit in the player.
 

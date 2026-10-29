@@ -21,7 +21,7 @@ public class MusicService {
         this.client = YoutubeClient();
         this.searches = Cache<string>(128, 120000L);
         this.videos = Cache<string>(256, 600000L);
-        this.streams = Cache<StreamInfo>(64, 60000L);
+        this.streams = Cache<StreamInfo>(64, 300000L);
         this.slots = Semaphore(4);
     }
 
@@ -95,7 +95,7 @@ public class MusicService {
             return Result.Err(YoutubeError("busy", "upstream capacity reached"));
         }
         let permit = Permit(lifetime[0].slots);
-        let result = lifetime[0].client.streams.get_manifest(id, token).await;
+        let result = lifetime[0].client.streams.get_manifest(id, token, Option.Some(StreamKind.AudioOnly)).await;
         permit.release();
         if result.is_err() {
             return Result.Err(result.unwrap_err());

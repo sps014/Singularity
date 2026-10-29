@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: sps014/dream-packages
-          ref: 605214f0cbe924079da7317f33538bb283fff2ea
+          ref: b2457cd034af1bff1b751b408193c9cdf581bde2
           path: dream-packages
           persist-credentials: false
       - uses: actions/setup-node@v4
